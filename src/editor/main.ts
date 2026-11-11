@@ -88,6 +88,10 @@ function firstShow(): ShowFile {
 const state = new EditorState(firstShow());
 // the project's name is the show's title (the player, the exports' file names)
 if (project) state.file.title = project.name;
+// what the show was before any edit, the venue left out: once the music is
+// analysed the show is rebuilt only if nothing but the venue changed meanwhile
+const withoutVenue = (f: ShowFile) => JSON.stringify({ ...f, venue: undefined });
+const openedAs = withoutVenue(state.file);
 
 // the venue the editor works in follows the file's `venue` (switching, undo,
 // loading a file); registered before the timeline so it lays out the new lanes
@@ -612,13 +616,28 @@ void transport.loadMusic().then((m) => {
   if (m !== 'ready' || !transport.audio) return;
   music = analyseMusic(transport.audio);
   setCurves(music.curves);
+  const rebuild = (!restored && generate !== 'empty') || (extended && autosave);
+  if (rebuild && withoutVenue(state.file) !== openedAs) {
+    // edited while the music loaded: keep those edits, do not rebuild over them
+    preview.setShow(view.filter(state.file));
+    toast('音楽の読み込み中に編集があったので、音楽に合わせた作り直しはしていません');
+    return;
+  }
+  // a venue chosen while the music loaded stays (the rebuilt show has none)
+  const venue = state.file.venue;
+  const inVenue = (f: ShowFile): ShowFile => {
+    const g = { ...f };
+    if (venue) g.venue = venue;
+    else delete g.venue;
+    return g;
+  };
   if (!restored && generate !== 'empty') {
     const built = buildShow(music, generate ?? 'lagoon');
-    state.load(project ? { ...built, title: project.name } : built);
+    state.load(inVenue(project ? { ...built, title: project.name } : built));
   }
   else if (extended && autosave) {
     // the new ending again, now following the music
-    state.load(extendToMusic(autosave, music) ?? state.file);
+    state.load(inVenue(extendToMusic(autosave, music) ?? state.file));
     saveNow();
   } else preview.setShow(view.filter(state.file));
 }).finally(() => (musicSettled = true));
