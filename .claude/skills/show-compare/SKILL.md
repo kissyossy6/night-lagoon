@@ -63,7 +63,7 @@ python3 $S/sheet.py ab shots/<話題> --title="1:32 の入り"                  
 
 ## 4. 描き方（コード）を変えるとき
 
-1. **変える前に**控えを作る：`sh .claude/skills/show-compare/scripts/snapshot-before.sh <話題>`（`backups/_before/` を作り直し、`<話題>` を付けると `backups/<日付>-<話題>/src` にも残す。このプロジェクトは git ではない）
+1. **変える前に**控えを作る：`sh .claude/skills/show-compare/scripts/snapshot-before.sh <話題>`（`backups/_before/` を作り直し、`<話題>` を付けると `backups/<日付>-<話題>/src` にも残す。git の commit とは別の、作業中の控え）
 2. `preview_start` の `water-show-v2-before` で控えを http://localhost:5299 に立てる
 3. 変えたあと、`--src="now:show=lagoon&base=http://localhost:5299" --src=new:show=lagoon` で撮る。同じ開発サーバーで前後を撮ると、HMR で「前」がもう新しいコードになっていることがある
 4. 終わったら控えのサーバーを止める（`preview_stop`）

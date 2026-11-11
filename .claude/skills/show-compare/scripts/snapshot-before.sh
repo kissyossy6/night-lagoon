@@ -7,7 +7,8 @@
 #
 # Writes backups/_before/ (replaced each time; public/ and node_modules are
 # links, so it is small) and, with <topic>, also a dated keep-copy of src/ in
-# backups/<date>-<topic>/src (the project's backup rule: it is not a git repo).
+# backups/<date>-<topic>/src (the project's backup rule: a working copy kept
+# apart from git commits, which are made only when the owner asks).
 set -e
 cd "$(dirname "$0")/../../../.."
 [ -f package.json ] && [ -d src ] || { echo "run inside water-show_v2" >&2; exit 1; }

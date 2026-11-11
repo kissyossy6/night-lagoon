@@ -46,6 +46,8 @@ npm run dev
 
 使い方の詳しい説明は `docs/manual/index.html`（マニュアル）。
 
+コードのコメントや文書に出てくる `docs/handoff.md`・`docs/video-review.md`・`docs/lab-analysis.md`・`docs/vr180-analysis.md`・`docs/test-scenarios.md`・`docs/reports/`・`docs/reviews/` と、`shots/`・`backups/` は作者の手元だけの作業メモ・記録で、このリポジトリには入っていない（経緯の出典として名前だけ残している）。
+
 プロジェクトは `projects/<id>/`（`project.json` と一覧の絵 `thumb.jpg`）に保存される。**GitHub には入れない**：`.gitignore` で `projects/*` を外し、見本の `projects/sample-*/` だけ残す。見本の絵とスタート画面の背景は `node scripts/home-assets.mjs` で撮り直す。
 
 ## ショーの操作
