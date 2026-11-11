@@ -89,10 +89,10 @@ export type ShowVariant = 'lagoon' | 'fantasia' | 'hanabi';
  * is added here only. short = its name in menus, note = what the menu adds.
  */
 export const SHOW_VARIANTS: { id: ShowVariant; label: string; title: string; short: string; note?: string }[] = [
-  { id: 'lagoon', label: 'Night Lagoon (今の演出)', title: 'Night Lagoon', short: 'Night Lagoon', note: '今の演出' },
-  { id: 'fantasia', label: 'ファンタジア版 (映像の冒頭・1:06 の色替え)', title: 'Night Lagoon — Fantasia', short: 'ファンタジア版' },
+  { id: 'lagoon', label: 'Rhapsody in Blue (今の演出)', title: 'Rhapsody in Blue', short: 'Rhapsody in Blue', note: '今の演出' },
+  { id: 'fantasia', label: 'ファンタジア版 (映像の冒頭・1:06 の色替え)', title: 'Rhapsody in Blue — Fantasia', short: 'ファンタジア版' },
   // Night Lagoon's water with fireworks over its finale (src/show/hanabi.ts)
-  { id: 'hanabi', label: '花火版 (Night Lagoon＋フィナーレの花火)', title: 'Night Lagoon — 花火', short: '花火版' },
+  { id: 'hanabi', label: '花火版 (Rhapsody in Blue＋フィナーレの花火)', title: 'Rhapsody in Blue — 花火', short: '花火版' },
 ];
 
 /** The version a ?show= value names, else Night Lagoon. */

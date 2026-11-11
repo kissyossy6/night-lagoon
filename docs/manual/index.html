@@ -151,7 +151,7 @@
   <p class="lede">噴水ショーのシミュレーター（water-show v2）の、全部の機能の使い方を1か所にまとめました。ボタンや画面の名前は、実際の画面とソースで確かめた名前をそのまま使っています。写真は、開発サーバーで実際に撮った画面です（音は出していません）。</p>
   <div class="facts">
     <div><b>5</b><span>ページ（一覧・エディタ・本番・会場・研究室）</span></div>
-    <div><b>3</b><span>版（Night Lagoon・ファンタジア・花火）</span></div>
+    <div><b>3</b><span>版（Rhapsody in Blue・ファンタジア・花火）</span></div>
     <div><b>4</b><span>組み込みの会場</span></div>
     <div><b>5</b><span>実機向けの書き出し形式＋Art-Net</span></div>
     <div><b>8</b><span>演出のスキル</span></div>
@@ -205,7 +205,7 @@ npm run dev</pre>
     <ul class="plain">
       <li><b>保存先</b>：<code>projects/&lt;id&gt;/project.json</code>（演出）と <code>thumb.jpg</code>（一覧の絵。エディタの 3D から、止めたときと一覧に戻るときに撮る）。開発サーバーなしで開いたときは、このブラウザの中に保存し、一覧の上にそう出る。</li>
       <li><b>GitHub には入れない</b>：<code>.gitignore</code> で <code>projects/*</code> を外し、<code>projects/sample-*/</code>（見本）だけ残す。</li>
-      <li><b>見本</b>：<code>projects/sample-*</code> のフォルダ。<code>"generate"</code> の見本（Night Lagoon・ファンタジア・花火）は、開くたびに音楽の波形に合わせて作り直される。絵は <code>node scripts/home-assets.mjs</code> で撮り直せる。</li>
+      <li><b>見本</b>：<code>projects/sample-*</code> のフォルダ。<code>"generate"</code> の見本（Rhapsody in Blue・ファンタジア・花火）は、開くたびに音楽の波形に合わせて作り直される。絵は <code>node scripts/home-assets.mjs</code> で撮り直せる。</li>
       <li>前のエディタの自動保存（1つだけの枠）があれば、最初に一覧を開いたとき「エディタの演出（引っ越し）」として1回だけ移す。</li>
       <li>同じプロジェクトを2つのタブのエディタで開くと、知らせが出る（後から保存したほうが残るため）。</li>
     </ul>
@@ -238,7 +238,7 @@ npm run dev</pre>
   <article class="cmp" id="start-5min">
     <h3>5分で一通り試す</h3>
     <ol class="steps">
-      <li><code>npm run dev</code> のあと、<a href="http://localhost:5199/">localhost:5199/</a> を開き「プロジェクト一覧」→ 見本「Night Lagoon」→「作ってエディタで開く」。</li>
+      <li><code>npm run dev</code> のあと、<a href="http://localhost:5199/">localhost:5199/</a> を開き「プロジェクト一覧」→ 見本「Rhapsody in Blue」→「作ってエディタで開く」。</li>
       <li>エディタ右上の「▶ 本番で再生」→「▶ 再生」（ここで初めて音が鳴る）。下のバーで 1:00 あたりへ動かす。</li>
       <li>66 秒の色替え（ピンク）を観る。<kbd>Space</kbd> で止める。</li>
       <li>キーの <kbd>2</kbd> を押す（カメラが「目線」になる）。<kbd>1</kbd> で「客席」に戻る。</li>
@@ -262,9 +262,9 @@ npm run dev</pre>
     <p><b>版</b>：同じ曲・同じ会場で、演出の中身が違うもの。ふだんはプロジェクト一覧の<b>見本</b>として選びます（見本の ⋯ →「▶ 再生だけ見る」）。URL の <code>?show=</code> でも直接開けます。</p>
     <table class="t">
       <tr><th>版</th><th>開く URL</th><th>どんな版</th></tr>
-      <tr><td>Night Lagoon</td><td><a href="http://localhost:5199/play.html">/play.html</a>（<code>?show=</code> なし）</td><td>決まった基本の演出。中身は変えない約束。</td></tr>
+      <tr><td>Rhapsody in Blue</td><td><a href="http://localhost:5199/play.html">/play.html</a>（<code>?show=</code> なし）</td><td>決まった基本の演出。中身は変えない約束。</td></tr>
       <tr><td>ファンタジア版</td><td><a href="http://localhost:5199/play.html?show=fantasia">/play.html?show=fantasia</a></td><td>冒頭を水幕の映像で始め、1:06 の色替えを持ち上げた版。</td></tr>
-      <tr><td>花火版</td><td><a href="http://localhost:5199/play.html?show=hanabi">/play.html?show=hanabi</a></td><td>Night Lagoon に、フィナーレとラストの花火を足した版。</td></tr>
+      <tr><td>花火版</td><td><a href="http://localhost:5199/play.html?show=hanabi">/play.html?show=hanabi</a></td><td>Rhapsody in Blue に、フィナーレとラストの花火を足した版。</td></tr>
       <tr><td>プロジェクト</td><td><code>/play.html?project=id</code></td><td>そのプロジェクトの演出（エディタの「▶ 本番で再生」と同じ）。<code>?show=edited</code> は最後にエディタで開いたプロジェクト。</td></tr>
       <tr><td>確かめ用</td><td><code>?show=pyrotest</code>・<code>?show=test</code></td><td>花火の試し打ち、短い試験の演出。ふだんは使わない。</td></tr>
     </table>
@@ -272,9 +272,9 @@ npm run dev</pre>
       <figure><img loading="lazy" src="img/11-fantasia.jpg" alt="ファンタジア版"><figcaption>ファンタジア版 1:04 ごろ（シアンの扇）</figcaption></figure>
       <figure><img loading="lazy" src="img/12-hanabi.jpg" alt="花火版"><figcaption>花火版 180 秒、カメラ「花火と水」（ラストのサビの陸の花火）</figcaption></figure>
     </div>
-    <p>スタート画面の題とブラウザのタブの名前は、開いた版の名前になります（「Night Lagoon」「Night Lagoon — Fantasia」「Night Lagoon — 花火」）。</p>
+    <p>スタート画面の題とブラウザのタブの名前は、開いた版の名前になります（「Rhapsody in Blue」「Rhapsody in Blue — Fantasia」「Rhapsody in Blue — 花火」）。</p>
     <div class="figs small">
-      <figure><img loading="lazy" src="img/15-start-hanabi.jpg" alt="花火版のスタート画面"><figcaption><code>?show=hanabi</code> で開いたスタート画面。題が「Night Lagoon — 花火」</figcaption></figure>
+      <figure><img loading="lazy" src="img/15-start-hanabi.jpg" alt="花火版のスタート画面"><figcaption><code>?show=hanabi</code> で開いたスタート画面。題が「Rhapsody in Blue — 花火」</figcaption></figure>
     </div>
   </article>
 
@@ -404,7 +404,7 @@ npm run dev</pre>
     <table class="t">
       <tr><th>付け足し</th><th>意味</th></tr>
       <tr><td><code>?project=</code></td><td>プロジェクトの id（<code>projects/</code> のフォルダ名）。見本の id（<code>sample-hanabi</code> など）も使える。</td></tr>
-      <tr><td><code>?show=</code></td><td>版。<code>fantasia</code>・<code>hanabi</code>・<code>edited</code>（最後にエディタで開いたプロジェクト）・<code>pyrotest</code>・<code>test</code>。なしは Night Lagoon。</td></tr>
+      <tr><td><code>?show=</code></td><td>版。<code>fantasia</code>・<code>hanabi</code>・<code>edited</code>（最後にエディタで開いたプロジェクト）・<code>pyrotest</code>・<code>test</code>。なしは Rhapsody in Blue。</td></tr>
       <tr><td><code>?t=秒</code></td><td>その時刻から始める（例 <code>?t=66</code>）。</td></tr>
       <tr><td><code>?venue=</code></td><td>会場。<code>desk</code>（机）・<code>garden</code>（庭）・<code>plaza</code>（広場）・<code>lagoon</code>、または自分で作った会場の id。</td></tr>
       <tr><td><code>?cam=</code></td><td>カメラ。<code>audience</code> 客席・<code>eye</code> 目線・<code>screen</code>・<code>wide</code> 遠景・<code>low</code> 水面・<code>left</code>・<code>right</code>・<code>aerial</code> 空撮・<code>sky</code> 花火と水・<code>pyro</code> 花火・<code>auto</code> おまかせ・<code>free</code> 自由。</td></tr>
@@ -539,7 +539,7 @@ npm run dev</pre>
     </table>
     <p>数字は目安で、実機の応答は機材によって違います。花火の警告は、実際の許可の代わりにはなりません。</p>
     <div class="figs one">
-      <figure><img loading="lazy" src="img/28-warnings.jpg" alt="警告の一覧"><figcaption>Night Lagoon（音楽を読んだあと）：危ない 0・書いたとおりに動かない 38・お知らせ 112（プロジェクターの2つを含む）</figcaption></figure>
+      <figure><img loading="lazy" src="img/28-warnings.jpg" alt="警告の一覧"><figcaption>Rhapsody in Blue（音楽を読んだあと）：危ない 0・書いたとおりに動かない 38・お知らせ 112（プロジェクターの2つを含む）</figcaption></figure>
     </div>
   </article>
 
@@ -562,7 +562,7 @@ npm run dev</pre>
       <li>ファイルに残す：「JSON を書き出す」（ブラウザのダウンロードに <code>タイトル.json</code> が入る）。</li>
       <li>ファイルから開く：「JSON を読み込む…」でファイルを選ぶ。</li>
       <li>別のプロジェクトとして続ける：「複製して別のプロジェクトにする」（コピーが開く）。</li>
-      <li>中身を版にする：「Night Lagoon (今の演出) で置き換える」「ファンタジア版で置き換える」「花火版で置き換える」。空にする：「空のショーにする」。</li>
+      <li>中身を版にする：「Rhapsody in Blue (今の演出) で置き換える」「ファンタジア版で置き換える」「花火版で置き換える」。空にする：「空のショーにする」。</li>
     </ol>
     <div class="note warn">「置き換える」と「JSON を読み込む」は、開いているプロジェクトの中身を上書きします（<kbd>⌘</kbd>+<kbd>Z</kbd> で戻せる）。残したいときは先に「複製して別のプロジェクトにする」。</div>
     <div class="figs small">
@@ -682,7 +682,7 @@ npm run dev</pre>
       <li>1台だけ置くときは、図の左上の「1台を置く」を押し、図をクリック（<kbd>Esc</kbd> で「選ぶ・動かす」に戻る）。</li>
       <li>並びの中の1台は、その台をクリックしてドラッグで「ずらす」、または「この1台を外す」。</li>
       <li>消すときは <kbd>Delete</kbd>、または右の「部品を消す」。</li>
-      <li>できたら、右上の「3Dで見る」で本番画面を開く（エディタの演出があればそれ、無ければ Night Lagoon）。</li>
+      <li>できたら、右上の「3Dで見る」で本番画面を開く（エディタの演出があればそれ、無ければ Rhapsody in Blue）。</li>
     </ol>
     <table class="t">
       <tr><th>部品</th><th>どんな並び</th></tr>
@@ -855,7 +855,7 @@ npm run dev</pre>
     </div>
     <ul class="plain">
       <li>Claude は直す前に「今｜案」の比べる画像や連続コマを見せます。決めるのは自分です。</li>
-      <li>Night Lagoon の中身は変えない約束です。新しい考えは別の版に入ります。</li>
+      <li>Rhapsody in Blue の中身は変えない約束です。新しい考えは別の版に入ります。</li>
       <li>調べた原本は <code>docs/show-knowledge/</code>、演出の台本は <code>docs/show-plan.md</code>。</li>
     </ul>
     <div class="figs">
@@ -875,10 +875,10 @@ npm run dev</pre>
     <table class="t">
       <tr><th>前の症状</th><th>いま</th></tr>
       <tr><td>曲の最後（3:37）で再生が止まらず、コンソールに <code>RangeError: Maximum call stack size exceeded</code> が出続けた（3つの版とも）。</td><td>3:37 で止まり、ボタンが ▶ に戻って「おしまい」と出る。エラーは出ない。</td></tr>
-      <tr><td>エディタで区間の名前を変えたあと Night Lagoon を読み込み直すと、変えた名前が残った。</td><td>読み込んだ演出の区間になる（区間の無い演出なら曲の区間）。</td></tr>
+      <tr><td>エディタで区間の名前を変えたあと Rhapsody in Blue を読み込み直すと、変えた名前が残った。</td><td>読み込んだ演出の区間になる（区間の無い演出なら曲の区間）。</td></tr>
       <tr><td>⌘Z を何度押しても元に戻らないことがある、と思われていた。</td><td>直近 300 回までは最初まで戻れる（シナリオ 7.7 は 13 回で戻る）。300 回を超えて一番前に着くと、お知らせが出る（上の「元に戻す・やり直す」）。</td></tr>
       <tr><td>スタート画面の題が、どの版でも「Night Lagoon」だった。</td><td>開いた版の名前が出る（1章「版」）。</td></tr>
-      <tr><td>エディタの「自動保存から復元しました」のお知らせに花火版が無かった。</td><td>「Night Lagoon / ファンタジア版 / 花火版」と全部の版が出る。版の一覧は1か所（<code>choreography.ts</code> の <code>SHOW_VARIANTS</code>）から読むので、版が増えても直さずに済む。</td></tr>
+      <tr><td>エディタの「自動保存から復元しました」のお知らせに花火版が無かった。</td><td>「Rhapsody in Blue / ファンタジア版 / 花火版」と全部の版が出る。版の一覧は1か所（<code>choreography.ts</code> の <code>SHOW_VARIANTS</code>）から読むので、版が増えても直さずに済む。</td></tr>
       <tr><td>キュー表の書き出しの見積もりが「8,681 コマ」だった。</td><td>形式ごとの単位で出る：キュー表「472 キュー」、点火表「53 発」、チャンネル CSV と DMX の記録「8,681 コマ・376 台」、割り当て表「376 台」（花火版の例）。</td></tr>
       <tr><td><code>README.md</code> が古かった（カメラ・数字キー・スキルの数・Vision Pro・URL）。</td><td>今の作りに合わせた。</td></tr>
     </table>
@@ -888,7 +888,7 @@ npm run dev</pre>
     <h3>そのほか分かっていること（§7）</h3>
     <ul class="plain">
       <li>机・庭の小さい規模の水の動き（表面張力・風）は、まだ実物に合わせていません（描く大きさは直した）。</li>
-      <li>演出を小さい会場に合わせて組み替える仕組みはありません。Night Lagoon は机で 444 のうち 330 が動かない（番号で書かれているため。プロジェクターの 14 キューも、机には水幕が無いので動かない）。</li>
+      <li>演出を小さい会場に合わせて組み替える仕組みはありません。Rhapsody in Blue は机で 444 のうち 330 が動かない（番号で書かれているため。プロジェクターの 14 キューも、机には水幕が無いので動かない）。</li>
       <li>会場の画面の「元に戻す」は、会場を切り替えると消えます。</li>
       <li>機材と判定の数字はすべて仮です（<code>src/venues/rules.ts</code> の頭、<code>src/fixtures/water.ts</code>）。</li>
       <li>キューの数は、音楽を読んだかで変わります（エディタは音楽を読んだ版、会場の画面は読む前の版で数える）。警告の数も同じ。</li>
@@ -953,7 +953,7 @@ npm run dev</pre>
   <article class="cmp" id="words-show">
     <h3>演出の言葉</h3>
     <dl class="gl">
-      <dt>版</dt><dd>同じ曲・会場で中身の違う演出。Night Lagoon・ファンタジア版・花火版。</dd>
+      <dt>版</dt><dd>同じ曲・会場で中身の違う演出。Rhapsody in Blue・ファンタジア版・花火版。</dd>
       <dt>キュー</dt><dd>「この時刻に、この機材を、こう動かす」という指示1つ。時間軸の四角1つ。</dd>
       <dt>レーン</dt><dd>時間軸の1行。機材のまとまりごと（グリッド・ウィップ など）。</dd>
       <dt>フォルダ</dt><dd>レーンを「水・水幕・花火」にまとめたもの。たたむと細い帯。</dd>

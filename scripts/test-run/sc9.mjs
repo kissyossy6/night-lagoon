@@ -12,7 +12,7 @@ const tNew = await toast();
 await page.click('#file-btn'); await page.click('#file-pop [data-variant="lagoon"]'); await wait(2500);
 const lagon = await page.evaluate(() => ({ n: window.__editor.state.file.cues.length, json: JSON.stringify(window.__editor.state.file) }));
 const tLag = await toast();
-S.rec('9.1-読み込み', newN === 0 && lagon.n > 300 && /Night Lagoon.*読み込みました/.test(tLag) ? 'pass' : 'fail', `「新規ショー」→ キュー ${newN}（${tNew}）。「Night Lagoon (今の演出) を読み込む」→ キュー ${lagon.n}、知らせ「${tLag}」`);
+S.rec('9.1-読み込み', newN === 0 && lagon.n > 300 && /Rhapsody in Blue.*読み込みました/.test(tLag) ? 'pass' : 'fail', `「新規ショー」→ キュー ${newN}（${tNew}）。「Rhapsody in Blue (今の演出) を読み込む」→ キュー ${lagon.n}、知らせ「${tLag}」`);
 // 2 edit a water cue: pick a cue with pressure
 const pick = await page.evaluate(() => {
   const e = window.__editor; const f = e.state.file;
@@ -86,8 +86,8 @@ await pp.close();
 // 8 back to Lagoon
 await page.click('#file-btn'); await page.click('#file-pop [data-variant="lagoon"]'); await wait(2500);
 const back = await page.evaluate(() => ({ n: window.__editor.state.file.cues.length, same: JSON.stringify(window.__editor.state.file), sec: (window.__editor.state.file.sections ?? []).find((x) => x.name === 'テスト名')?.name ?? window.__editor.state.file.sections?.[0]?.name ?? null, chip: document.getElementById('section-chip')?.textContent }));
-S.rec('9.4-読み込み後の区間', back.sec == null || back.sec !== 'テスト名' ? 'pass' : 'fail', `Night Lagoon を読み込み直すと、区間の名前は「${back.sec ?? '（曲の区間）'}」、札「${back.chip}」。（既知の問題：区間の無いファイルで前の区間が残ることがある）`);
-S.rec('9.読み戻し', back.same === lagon.json ? 'pass' : 'info', back.same === lagon.json ? '最後に読み込んだ Night Lagoon は、最初に読み込んだものと完全に同じ' : '読み込み直した Night Lagoon が、最初のものと完全には同じでない（音楽の解析の違い・区間の残り・自動保存の可能性）');
+S.rec('9.4-読み込み後の区間', back.sec == null || back.sec !== 'テスト名' ? 'pass' : 'fail', `Rhapsody in Blue を読み込み直すと、区間の名前は「${back.sec ?? '（曲の区間）'}」、札「${back.chip}」。（既知の問題：区間の無いファイルで前の区間が残ることがある）`);
+S.rec('9.読み戻し', back.same === lagon.json ? 'pass' : 'info', back.same === lagon.json ? '最後に読み込んだ Rhapsody in Blue は、最初に読み込んだものと完全に同じ' : '読み込み直した Rhapsody in Blue が、最初のものと完全には同じでない（音楽の解析の違い・区間の残り・自動保存の可能性）');
 S.rec('9.6', 'user', 'エディタの見た目（グラファイト＋琥珀）。字・色・間隔で気になる所', '', ['shots/test-run/9/1-edited.jpg', 'shots/test-run/9/3-section.jpg']);
 S.rec('9.前提', 'user', 'あなたが前に作った演出（ブラウザの自動保存）が残っているか。このテストは別のブラウザプロフィールで動かしているので、あなたの保存は見えていない。あなたの画面でエディタを開いて確かめる（シナリオ 2.6 も同じ）');
 S.rec('9.コンソール', errors.length ? 'fail' : 'pass', errors.length ? errors.slice(0, 3).join(' | ') : 'コンソールのエラー 0');

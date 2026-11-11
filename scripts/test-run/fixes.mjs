@@ -10,7 +10,7 @@ const { browser, page, errors } = await open({ w: 1440, h: 900 });
 // ---------------------------------------------------------------- scenario 1
 const S1 = scenario(1, '花火版を通して観る');
 const titles = [];
-for (const [qs, want] of [['', 'Night Lagoon'], ['show=fantasia', 'Night Lagoon — Fantasia'], ['show=hanabi', 'Night Lagoon — 花火']]) {
+for (const [qs, want] of [['', 'Rhapsody in Blue'], ['show=fantasia', 'Rhapsody in Blue — Fantasia'], ['show=hanabi', 'Rhapsody in Blue — 花火']]) {
   await openPlayer(page, qs);
   const got = { tab: await page.title(), h1: await page.textContent('#start h1') };
   titles.push({ qs: qs || '(なし)', want, ...got, ok: got.tab === want && got.h1 === want });
@@ -19,7 +19,7 @@ for (const [qs, want] of [['', 'Night Lagoon'], ['show=fantasia', 'Night Lagoon 
 S1.rec('1.題', titles.every((t) => t.ok) ? 'pass' : 'fail', `始まりの画面の題とタブの名前：${titles.map((t) => `${t.qs} →「${t.h1}」（タブ「${t.tab}」）`).join('／')}`, '', [titles.shot]);
 
 // the other versions end the same way (one clock for all)
-for (const [qs, name] of [['t=208', 'Night Lagoon'], ['show=fantasia&t=208', 'ファンタジア版']]) {
+for (const [qs, name] of [['t=208', 'Rhapsody in Blue'], ['show=fantasia&t=208', 'ファンタジア版']]) {
   errors.length = 0;
   await openPlayer(page, qs);
   await page.click('#go');
@@ -42,7 +42,7 @@ errors.length = 0;
 await openEditor(page, 'fresh');
 await page.click('#file-btn');
 const menu = await page.$$eval('#file-pop [data-act="variant"]', (bs) => bs.map((b) => `${b.dataset.variant}=${b.textContent}`));
-const wantMenu = ['lagoon=Night Lagoon (今の演出) を読み込む', 'fantasia=ファンタジア版を読み込む', 'hanabi=花火版を読み込む'];
+const wantMenu = ['lagoon=Rhapsody in Blue (今の演出) を読み込む', 'fantasia=ファンタジア版を読み込む', 'hanabi=花火版を読み込む'];
 S9.rec('9.版のメニュー', menu.join() === wantMenu.join() ? 'pass' : 'fail', `「ファイル ▾」の版の項目（版の一覧 SHOW_VARIANTS から作る）：${menu.join('｜')}`, '', [await S9.shot(page, 'fix-file-menu')]);
 await page.keyboard.press('Escape');
 await page.mouse.click(700, 500);
@@ -68,7 +68,7 @@ await page.goto(`${BASE}/edit.html`);
 await page.waitForFunction(() => window.__editorReady === true, null, { timeout: 90000 });
 await wait(800);
 const restoreToast = await page.textContent('#toast');
-S9.rec('9.復元のお知らせ', /Night Lagoon \/ ファンタジア版 \/ 花火版/.test(restoreToast) ? 'pass' : 'fail', `自動保存のある状態で開き直したお知らせ：「${restoreToast}」`, '', [await S9.shot(page, 'fix-restore-toast')]);
+S9.rec('9.復元のお知らせ', /Rhapsody in Blue \/ ファンタジア版 \/ 花火版/.test(restoreToast) ? 'pass' : 'fail', `自動保存のある状態で開き直したお知らせ：「${restoreToast}」`, '', [await S9.shot(page, 'fix-restore-toast')]);
 await page.evaluate(() => localStorage.clear());
 S9.rec('9.コンソール-直し', errors.length ? 'fail' : 'pass', errors.length ? errors.slice(0, 3).join(' | ') : 'コンソールのエラー 0（上の3つの確かめの間）');
 S9.save({}, 'fix');

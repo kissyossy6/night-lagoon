@@ -87,8 +87,8 @@ ok(picked.part === 4 && picked.fixture === 2, `a click in the selected part pick
 await page.keyboard.press('Delete');
 const skipped = await ed(() => ({ skip: window.__venueEditor.doc().parts[4].skip, n: window.__venueEditor.venue().groups.find((g) => g.name === 'chaser').positions.length }));
 ok(JSON.stringify(skipped.skip) === '[2]' && skipped.n === 55, `Delete on a picked fixture is 外す (skip ${JSON.stringify(skipped.skip)}, chaser ${skipped.n})`);
-const partRow = await page.evaluate(() => [...document.querySelectorAll('.vn-cues-row')].find((r) => r.textContent.startsWith('Night Lagoon'))?.children[2].textContent);
-ok(Number(partRow) > 0 && (await cuesText()).includes('Night Lagoon 0'), `外す shows in the cue count: Night Lagoon 0 stop, ${partRow} move only part`);
+const partRow = await page.evaluate(() => [...document.querySelectorAll('.vn-cues-row')].find((r) => r.textContent.startsWith('Rhapsody in Blue'))?.children[2].textContent);
+ok(Number(partRow) > 0 && (await cuesText()).includes('Rhapsody in Blue 0'), `外す shows in the cue count: Rhapsody in Blue 0 stop, ${partRow} move only part`);
 const backBtn = page.locator('#fixture-fields button', { hasText: '戻す' }).first();
 ok((await backBtn.count()) > 0, 'the skipped fixture is listed with 戻す');
 
@@ -150,7 +150,7 @@ await page.waitForFunction(() => window.__venueEditor.doc().id === 'desk');
 await page.click('.vn-cues-btn');
 const deskText = await cuesText();
 // 2026-11-08: +14 projector cues (src/show/projector.ts), none of which runs in the desk tank (no screens)
-ok(/Night Lagoon 330／444/.test(deskText) && (await page.locator('.vn-cues-pop').isVisible()), `the desk tank counts its cues and opens the breakdown (${deskText})`);
+ok(/Rhapsody in Blue 330／444/.test(deskText) && (await page.locator('.vn-cues-pop').isVisible()), `the desk tank counts its cues and opens the breakdown (${deskText})`);
 if (shots) await page.screenshot({ path: `${shots}/08-desk-cues.png` });
 await page.keyboard.press('Escape');
 await page.mouse.click(5, 300);

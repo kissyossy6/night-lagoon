@@ -50,7 +50,7 @@ await page.click('#cx-cancel').catch(() => {});
 // 4 load lagoon back
 await page.click('#file-btn'); await page.click('#file-pop [data-variant="lagoon"]'); await wait(2500);
 const back = await page.evaluate(() => ({ venue: window.__editor.state.file.venue ?? 'lagoon', btn: document.getElementById('venue-btn').textContent }));
-S.rec('12.4', back.venue === 'lagoon' ? 'pass' : 'fail', `「Night Lagoon (今の演出) を読み込む」で会場が戻る：${back.venue}（${back.btn}）`, '', [await S.shot(page, '4-lagoon-back')]);
+S.rec('12.4', back.venue === 'lagoon' ? 'pass' : 'fail', `「Rhapsody in Blue (今の演出) を読み込む」で会場が戻る：${back.venue}（${back.btn}）`, '', [await S.shot(page, '4-lagoon-back')]);
 S.rec('12.コンソール', errors.length ? 'fail' : 'pass', errors.length ? errors.slice(0, 3).join(' | ') : 'コンソールのエラー 0');
 S.save();
 await browser.close();

@@ -627,7 +627,7 @@ function renderFooter() {
 }
 
 // ------------------------------------------- 動かないキュー (dev-plan B4)
-const SHOW_LABELS: Record<ShowVariant, string> = { lagoon: 'Night Lagoon', fantasia: 'ファンタジア', hanabi: '花火版' };
+const SHOW_LABELS: Record<ShowVariant, string> = { lagoon: 'Rhapsody in Blue', fantasia: 'ファンタジア', hanabi: '花火版' };
 let builtShows: { label: string; file: ShowFile }[] | null = null;
 
 /** The shows counted: the three versions, and what the timeline editor autosaved. */

@@ -10,7 +10,7 @@ await openVenue(page, 'venue=desk');
 const d = await foot();
 await page.click('.vn-cues-btn'); await wait(400);
 const pop = (await page.locator('.vn-cues-pop').innerText()).replace(/\s+/g, ' ');
-S.rec('15.2', /Night Lagoon 316／430/.test(d) && /グループが無い|番号が範囲の外|名前の付いた並びが無い|花火の台が無い/.test(pop) ? 'pass' : 'fail', `机の水槽の右下「${d}」。押して開いた表：「${pop.slice(0, 400)}」`, '', [await S.shot(page, '2-desk-pop')]);
+S.rec('15.2', /Rhapsody in Blue 316／430/.test(d) && /グループが無い|番号が範囲の外|名前の付いた並びが無い|花火の台が無い/.test(pop) ? 'pass' : 'fail', `机の水槽の右下「${d}」。押して開いた表：「${pop.slice(0, 400)}」`, '', [await S.shot(page, '2-desk-pop')]);
 await page.keyboard.press('Escape'); await page.mouse.click(5, 300);
 // lagoon copy: skip one
 await openVenue(page, 'venue=lagoon');
@@ -28,13 +28,13 @@ await page.click('.vn-cues-btn'); await wait(300);
 const afterRows = await page.evaluate(() => [...document.querySelectorAll('.vn-cues-row')].map((r) => [...r.children].map((c) => c.textContent)));
 const afterFoot = await foot();
 const skip = await ve(() => window.__venueEditor.doc().parts.flatMap((p) => p.skip ?? []).length);
-const lag = (rows) => rows.find((r) => r[0]?.startsWith('Night Lagoon'));
+const lag = (rows) => rows.find((r) => r[0]?.startsWith('Rhapsody in Blue'));
 const b = Number(lag(beforeRows)?.[2] ?? 0), a = Number(lag(afterRows)?.[2] ?? 0);
-S.rec('15.3', skip === 1 && a > b ? 'pass' : 'fail', `ラグーンの写しで1台を外すと、右下の表「Night Lagoon」の「一部だけ」が ${b} → ${a}。右下「${afterFoot}」`, '', [await S.shot(page, '3-lagoon-skip')]);
+S.rec('15.3', skip === 1 && a > b ? 'pass' : 'fail', `ラグーンの写しで1台を外すと、右下の表「Rhapsody in Blue」の「一部だけ」が ${b} → ${a}。右下「${afterFoot}」`, '', [await S.shot(page, '3-lagoon-skip')]);
 await page.keyboard.press('Escape'); await page.mouse.click(5, 300);
 const smp = [];
 for (const v of ['garden', 'plaza']) { await openVenue(page, `venue=${v}`); smp.push([v, await foot(), await S.shot(page, `4-${v}`)]); }
-S.rec('15.4-数', /Night Lagoon 259／430/.test(smp[1][1]) ? 'pass' : 'info', smp.map(([v, t]) => `${v}: ${t}`).join('／') + '（記録: 広場 Night Lagoon 259／430・ファンタジア 306／539・花火版 276／447）', '', smp.map((x) => x[2]));
+S.rec('15.4-数', /Rhapsody in Blue 259／430/.test(smp[1][1]) ? 'pass' : 'info', smp.map(([v, t]) => `${v}: ${t}`).join('／') + '（記録: 広場 Rhapsody in Blue 259／430・ファンタジア 306／539・花火版 276／447）', '', smp.map((x) => x[2]));
 S.rec('15.4', 'user', '「動かないキュー」の説明が分かるか。演出を小さい会場に合わせて組み替える仕組みが欲しいか。画面 2-desk-pop', '', ['shots/test-run/15/2-desk-pop.jpg']);
 S.rec('15.コンソール', errors.length ? 'fail' : 'pass', errors.length ? errors.slice(0, 3).join(' | ') : 'コンソールのエラー 0');
 S.save();
