@@ -1,0 +1,52 @@
+# --- 依存・生成物
+node_modules/
+dist/
+.DS_Store
+
+# --- 個人データは GitHub に入れない（docs/projects-plan.md）
+# 自分のプロジェクトは入れず、見本（sample-*）だけ残す
+projects/*
+!projects/sample-*/
+projects/.trash/
+
+# 書き出した動画・実機データ（作品から作ったもの）
+exports/
+
+# --- 他人の権利がある素材（手元にはそのまま置く。使い方は README）
+# 曲（編曲の著作権が残る国がある）。置き方は README の「背景音楽」
+public/music/*
+!public/music/.keep
+# 映像（出典の記録がない）
+public/videos/*
+!public/videos/.keep
+# Depence の見本のコマ（CREDITS.md だけ残す）
+references/depence/*
+!references/depence/CREDITS.md
+# 花火の録音（解析だけに使う。出典表・解析の数字は残す）
+references/sounds/**/*.ogg
+# お手本の画面（他社の製品の画面）
+references/inbox/*
+!references/inbox/.keep
+references/saved/*
+# 外から見つけた参考ページ（他人のコード）
+docs/reference/
+
+# --- 作業の記録（手元だけで使う）
+# 撮った画像・動画。見せたい画像は docs の中の img/ に置く
+shots/
+backups/
+# 作ったプログラム（join.swift から作り直せる）
+tools/apmp/join
+
+# --- 作業メモ（一旦入れない）
+docs/handoff.md
+docs/reviews/
+docs/reports/
+docs/stage5-test.md
+docs/test-scenarios.md
+docs/video-review.md
+docs/lab-analysis.md
+docs/vr180-analysis.md
+
+# 曲を作るときに取ってきた元の録音（npm run music）
+.cache/

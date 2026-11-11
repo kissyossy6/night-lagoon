@@ -1,0 +1,12 @@
+{
+ "format": 1,
+ "id": "sample-hanabi",
+ "name": "Night Lagoon — 花火版",
+ "created": "2026-11-11T00:00:00.000Z",
+ "updated": "2026-11-11T00:00:00.000Z",
+ "sample": true,
+ "order": 3,
+ "description": "Night Lagoon のフィナーレに花火を重ねた版",
+ "generate": "hanabi",
+ "show": null
+}

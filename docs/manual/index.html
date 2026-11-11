@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使い方マニュアル</title>
+<!-- 見た目は docs/reports/look-report.html・test-results.html と同じ（src/styles/tokens.css の値）。
+     開き方：npm run dev のあと http://localhost:5199/docs/manual/index.html
+     画像は docs/manual/img/（2026-11-06 に実際の画面を撮ったもの）。画面が変わったら、その章の文と写真を直す。 -->
+<link rel="stylesheet" href="../../src/styles/tokens.css">
+<style>
+  :root {
+    /* tokens.css が読めないとき（ファイルを直接開いたとき）の控え */
+    --r-bg: var(--gray-1, #0f0f10);
+    --r-panel: var(--gray-3, #161617);
+    --r-panel-2: var(--gray-5, #1e1e20);
+    --r-line: var(--gray-6, #272729);
+    --r-line-2: var(--gray-7, #2e2e31);
+    --r-text: var(--gray-13, #d9d9d6);
+    --r-strong: var(--gray-15, #f6f6f3);
+    --r-dim: var(--gray-11, #8c8c89);
+    --r-faint: var(--gray-10, #5c5c5a);
+    --r-accent: var(--accent, #e8a33d);
+    --r-accent-light: var(--accent-light, #f2c27a);
+    --r-ok: var(--green, #6cc28a);
+    --r-caution: var(--yellow, #d9b440);
+    --r-danger: #d9604c;
+    --r-radius: var(--radius, 2px);
+    --r-text-face: var(--face-text, 'BIZ UDPGothic', 'Hiragino Sans', system-ui, sans-serif);
+    --r-mono-face: var(--face-mono, 'BIZ UDGothic', ui-monospace, Menlo, monospace);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 16px; }
+  body {
+    margin: 0; background: var(--r-bg); color: var(--r-text);
+    font-family: var(--r-text-face); font-size: 15px; line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--r-accent-light); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, kbd { font-family: var(--r-mono-face); font-size: 0.86em; color: var(--r-strong);
+    background: var(--r-panel-2); padding: 1px 4px; border-radius: var(--r-radius); }
+  kbd { border: 1px solid var(--r-line-2); }
+  b, strong { color: var(--r-strong); }
+
+  .wrap { display: grid; grid-template-columns: 232px minmax(0, 1fr); max-width: 1440px; margin: 0 auto; }
+  nav.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 28px 16px 28px 24px; border-right: 1px solid var(--r-line); font-size: 13px;
+  }
+  nav.toc .brand { font-size: 12px; color: var(--r-dim); letter-spacing: .04em; margin-bottom: 18px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; }
+  nav.toc li a { display: flex; gap: 8px; padding: 5px 8px; color: var(--r-text); border-left: 2px solid transparent; }
+  nav.toc li a:hover { background: var(--r-panel); text-decoration: none; }
+  nav.toc li a.on { border-left-color: var(--r-accent); color: var(--r-strong); background: var(--r-panel); }
+  nav.toc .n { font-family: var(--r-mono-face); color: var(--r-faint); font-size: 11px; min-width: 1.4em; padding-top: 1px; }
+  nav.toc li.sub a { padding-left: 30px; font-size: 12px; color: var(--r-dim); }
+  nav.toc li.sub a.on { color: var(--r-strong); }
+
+  main { padding: 40px 48px 120px; min-width: 0; }
+  header.top { max-width: 920px; }
+  .eyebrow { font-size: 12px; color: var(--r-accent); letter-spacing: .08em; }
+  h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 14px; color: var(--r-strong); font-weight: 700; }
+  .lede { color: var(--r-text); font-size: 16px; margin: 0 0 22px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--r-line); border-radius: var(--r-radius); margin: 0 0 18px; }
+  .facts div { padding: 12px 18px; border-right: 1px solid var(--r-line); }
+  .facts div:last-child { border-right: 0; }
+  .facts b { display: block; font-family: var(--r-mono-face); font-size: 24px; color: var(--r-strong); line-height: 1.2; }
+  .facts span { font-size: 12px; color: var(--r-dim); }
+  .howto { font-size: 13px; color: var(--r-dim); margin: 0; }
+
+  section.theme { margin-top: 72px; }
+  section.theme > h2 { font-size: 24px; color: var(--r-strong); margin: 0 0 6px; display: flex; align-items: baseline; gap: 12px; }
+  section.theme > h2 .n { font-family: var(--r-mono-face); font-size: 13px; color: var(--r-accent); }
+  section.theme > .intro { color: var(--r-dim); max-width: 860px; margin: 0 0 22px; font-size: 14px; }
+  article.cmp { border-top: 1px solid var(--r-line); padding: 26px 0 30px; max-width: 1080px; }
+  article.cmp h3 { margin: 0 0 12px; font-size: 18px; color: var(--r-strong); }
+  article.cmp h4 { margin: 18px 0 6px; font-size: 15px; color: var(--r-strong); }
+  article.cmp p { margin: 0 0 10px; max-width: 880px; }
+  ol.steps { margin: 0 0 14px; padding-left: 1.6em; max-width: 880px; }
+  ol.steps li { margin-bottom: 4px; padding-left: 2px; }
+  ol.steps li::marker { font-family: var(--r-mono-face); color: var(--r-accent); font-size: 13px; }
+  ul.plain { margin: 0 0 14px; padding-left: 1.2em; max-width: 880px; }
+  ul.plain li { margin-bottom: 4px; }
+  .note { font-size: 13.5px; color: var(--r-dim); border-left: 2px solid var(--r-line-2); padding: 2px 0 2px 12px; margin: 10px 0 14px; max-width: 880px; }
+  .note.warn { border-left-color: var(--r-caution); color: var(--r-text); }
+  .note.bad { border-left-color: var(--r-danger); color: var(--r-text); }
+
+  .figs { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin: 4px 0 16px; }
+  .figs.one { grid-template-columns: 1fr; }
+  .figs.small { grid-template-columns: repeat(auto-fit, minmax(240px, 380px)); }
+  figure { margin: 0; background: #000; border: 1px solid var(--r-line); border-radius: var(--r-radius); overflow: hidden; }
+  figure img { display: block; width: 100%; height: auto; max-height: 620px; object-fit: contain; cursor: zoom-in; background: #000; }
+  figcaption { font-size: 12px; color: var(--r-dim); padding: 7px 10px; background: var(--r-panel); border-top: 1px solid var(--r-line); }
+  figcaption code { font-size: 11px; }
+
+  table.t { width: 100%; max-width: 1000px; border-collapse: collapse; font-size: 13.5px; margin: 6px 0 16px; }
+  table.t th, table.t td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--r-line); vertical-align: top; }
+  table.t th { color: var(--r-dim); font-weight: 500; font-size: 12px; }
+  table.t td:first-child { white-space: nowrap; color: var(--r-strong); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .dot.stop { background: transparent; border: 2px solid var(--r-strong); }
+  .dot.red { background: var(--r-danger); }
+  .dot.yel { background: var(--r-caution); }
+  dl.gl { display: grid; grid-template-columns: 11em minmax(0, 1fr); gap: 8px 18px; margin: 0; max-width: 1000px; }
+  dl.gl dt { font-size: 14px; color: var(--r-strong); font-weight: 700; }
+  dl.gl dd { margin: 0; font-size: 14px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; max-width: 1080px; margin: 0 0 16px; }
+  .cards div { border: 1px solid var(--r-line); border-radius: var(--r-radius); padding: 14px 16px; background: var(--r-panel); }
+  .cards h4 { margin: 0 0 4px; font-size: 15px; color: var(--r-strong); }
+  .cards p { margin: 0 0 6px; font-size: 13.5px; }
+  .cards .ask { color: var(--r-accent-light); }
+  pre.cmd { font-family: var(--r-mono-face); font-size: 13px; background: var(--r-panel); border: 1px solid var(--r-line); border-radius: var(--r-radius); padding: 10px 14px; margin: 6px 0 12px; max-width: 880px; overflow-x: auto; color: var(--r-strong); }
+
+  #lb { position: fixed; inset: 0; background: rgba(0,0,0,.94); display: none; z-index: 10; }
+  #lb.on { display: block; }
+  #lb .stage { position: absolute; inset: 44px 0 0; overflow: auto; display: flex; justify-content: center; align-items: flex-start; }
+  #lb img { max-width: 100%; height: auto; display: block; margin: auto; }
+  #lb.fit img { max-height: calc(100vh - 44px); width: auto; }
+  #lb .bar { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 16px;
+    background: var(--r-panel); border-bottom: 1px solid var(--r-line); font-size: 13px; }
+  #lb .bar .cap { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--r-text); }
+  #lb button { font: inherit; font-size: 12px; color: var(--r-text); background: var(--r-panel-2); border: 1px solid var(--r-line-2);
+    border-radius: var(--r-radius); height: 26px; padding: 0 10px; cursor: pointer; }
+  #lb button:hover { border-color: var(--r-accent); }
+
+  @media (max-width: 980px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--r-line); padding: 16px; }
+    nav.toc ol { display: flex; flex-wrap: wrap; gap: 4px; }
+    nav.toc li.sub { display: none; }
+    main { padding: 24px 16px 80px; }
+    .figs { grid-template-columns: 1fr; }
+    dl.gl { grid-template-columns: 1fr; gap: 2px 0; }
+    dl.gl dd { margin-bottom: 10px; }
+    table.t td:first-child { white-space: normal; }
+    table.t { display: block; overflow-x: auto; }
+    .facts div { flex: 1 1 40%; border-bottom: 1px solid var(--r-line); }
+  }
+  main code, table.t td, dl.gl dd, figcaption { overflow-wrap: anywhere; }
+</style></head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">water-show v2 ・ 使い方マニュアル</div>
+  <ol id="toc"></ol>
+</nav>
+<main>
+
+<header class="top">
+  <div class="eyebrow">2026-11-06 の画面で書いたマニュアル</div>
+  <h1>使い方マニュアル</h1>
+  <p class="lede">噴水ショーのシミュレーター（water-show v2）の、全部の機能の使い方を1か所にまとめました。ボタンや画面の名前は、実際の画面とソースで確かめた名前をそのまま使っています。写真は、開発サーバーで実際に撮った画面です（音は出していません）。</p>
+  <div class="facts">
+    <div><b>5</b><span>ページ（一覧・エディタ・本番・会場・研究室）</span></div>
+    <div><b>3</b><span>版（Night Lagoon・ファンタジア・花火）</span></div>
+    <div><b>4</b><span>組み込みの会場</span></div>
+    <div><b>5</b><span>実機向けの書き出し形式＋Art-Net</span></div>
+    <div><b>8</b><span>演出のスキル</span></div>
+  </div>
+  <p class="howto">写真は押すと大きくなります（← → で次へ、Esc で閉じる）。左の目次から各章へ飛べます。</p>
+</header>
+
+<!-- ============================================================ 1 -->
+<section class="theme" id="start" data-short="まずここから">
+  <h2><span class="n">1</span>まずここから</h2>
+  <p class="intro">起動のしかた、プロジェクトの流れ、5つのページ、5分で一通り試す手順。</p>
+
+  <article class="cmp" id="start-run">
+    <h3>起動のしかた</h3>
+    <ol class="steps">
+      <li>ターミナルで、このフォルダ（<code>water-show_v2</code>）に移る。</li>
+      <li>初めてのときだけ <code>npm install</code> を打つ（部品を入れる）。</li>
+      <li><code>npm run dev</code> を打つ（開発サーバーが立ち上がる）。</li>
+      <li>Chrome で <a href="http://localhost:5199/">http://localhost:5199/</a> を開く（スタート画面）。</li>
+    </ol>
+<pre class="cmd">npm install
+npm run dev</pre>
+    <ul class="plain">
+      <li><b>開発サーバー</b>：自分のパソコンの中だけで動く、画面を見せるための小さなサーバー。ポートは 5199 番（<code>.claude/launch.json</code> の <code>water-show-v2</code>）。</li>
+      <li>止めるときは、ターミナルで <kbd>Ctrl</kbd>+<kbd>C</kbd>。</li>
+      <li>ほかのコマンド：<code>npm run typecheck</code>（型の確かめ）、<code>npm run build</code>（配る形に組む。見るのは <code>water-show-v2-dist</code>、ポート 5198）。</li>
+      <li>動画の書き出しは Chrome か Edge で（WebCodecs という機能が要ります）。</li>
+    </ul>
+  </article>
+
+  <article class="cmp" id="start-projects">
+    <h3>プロジェクト（作品の単位）</h3>
+    <p>演出は<b>プロジェクト</b>ごとに分けて持ちます。流れは <b>スタート → プロジェクト一覧 → エディタ → 本番で再生</b>。画面のつながりは <a href="../screen-flow.html">画面遷移図</a>。</p>
+    <ol class="steps">
+      <li>スタート画面で「プロジェクト一覧」を押す（前回開いたプロジェクトがあれば「前回のつづき」も出る）。</li>
+      <li>「＋ 新規プロジェクト」で名前と<b>はじめかた</b>（空のショー／見本）を選び「作ってエディタで開く」。見本のカードを押しても同じ（見本は複製されるので、見本そのものは変わらない）。</li>
+      <li>エディタで作る。直したものは、そのプロジェクトに自動で保存される（上の帯に「自動保存済み」）。</li>
+      <li>右上の「▶ 本番で再生」で本番画面が別のタブに開く。そこで「▶ 再生」。</li>
+      <li>本番画面の「← エディタに戻る」でエディタのタブへ。エディタ左上の「← 一覧」で一覧へ（保存してから戻る）。</li>
+    </ol>
+    <table class="t">
+      <tr><th>一覧の ⋯</th><th>すること</th></tr>
+      <tr><td>エディタで開く・▶ 本番で再生</td><td>そのプロジェクトを開く</td></tr>
+      <tr><td>名前を変える</td><td>一覧・エディタ・本番画面の題が変わる（エディタ左上の名前を押しても変えられる）</td></tr>
+      <tr><td>複製</td><td>「〇〇 のコピー」を作る</td></tr>
+      <tr><td>JSON を書き出す</td><td>演出を JSON ファイルに残す</td></tr>
+      <tr><td>見本にする</td><td>今の状態を写して見本に足す（<code>projects/sample-…</code>。git に入るので個人的な内容が無いか確かめる）</td></tr>
+      <tr><td>Finder で表示</td><td>そのプロジェクトのフォルダを開く</td></tr>
+      <tr><td>削除</td><td><code>projects/.trash/</code> に移す（フォルダを戻せば元に戻る）</td></tr>
+    </table>
+    <ul class="plain">
+      <li><b>保存先</b>：<code>projects/&lt;id&gt;/project.json</code>（演出）と <code>thumb.jpg</code>（一覧の絵。エディタの 3D から、止めたときと一覧に戻るときに撮る）。開発サーバーなしで開いたときは、このブラウザの中に保存し、一覧の上にそう出る。</li>
+      <li><b>GitHub には入れない</b>：<code>.gitignore</code> で <code>projects/*</code> を外し、<code>projects/sample-*/</code>（見本）だけ残す。</li>
+      <li><b>見本</b>：<code>projects/sample-*</code> のフォルダ。<code>"generate"</code> の見本（Night Lagoon・ファンタジア・花火）は、開くたびに音楽の波形に合わせて作り直される。絵は <code>node scripts/home-assets.mjs</code> で撮り直せる。</li>
+      <li>前のエディタの自動保存（1つだけの枠）があれば、最初に一覧を開いたとき「エディタの演出（引っ越し）」として1回だけ移す。</li>
+      <li>同じプロジェクトを2つのタブのエディタで開くと、知らせが出る（後から保存したほうが残るため）。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/00-home.jpg" alt="スタート画面"><figcaption>スタート画面（<code>index.html</code>）。「プロジェクト一覧」を押す</figcaption></figure>
+      <figure><img loading="lazy" src="img/00-list.jpg" alt="プロジェクト一覧"><figcaption>プロジェクト一覧。上が自分のプロジェクト、下が見本</figcaption></figure>
+      <figure><img loading="lazy" src="img/00-new.jpg" alt="新規プロジェクト"><figcaption>新規プロジェクト。名前と、はじめかたを選ぶ</figcaption></figure>
+      <figure><img loading="lazy" src="img/00-play.jpg" alt="本番再生の入口"><figcaption>本番画面（<code>play.html</code>）の入口。「▶ 再生」で始まる</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="start-pages">
+    <h3>5つのページ</h3>
+    <table class="t">
+      <tr><th>ページ</th><th>URL</th><th>何をする所</th></tr>
+      <tr><td>スタート・一覧</td><td><a href="http://localhost:5199/">localhost:5199/</a>（<code>index.html</code>）</td><td>プロジェクトを選ぶ・作る・名前を変える・複製・削除。</td></tr>
+      <tr><td>エディタ</td><td><code>edit.html?project=id</code></td><td>時間軸で演出を作る・直す。警告を見る。実機向けに書き出す（CSV・DMX・Art-Net）。<code>?project</code> なしは<b>確認用</b>（どのプロジェクトにも保存しない。道具の確かめ用）。</td></tr>
+      <tr><td>本番画面</td><td><code>play.html?project=id</code></td><td>ショーを流して観る。カメラ・照明・画質・音量を変える。動画と Vision Pro 180° を書き出す。</td></tr>
+      <tr><td>会場</td><td><a href="http://localhost:5199/venue.html">localhost:5199/venue.html</a></td><td>噴水を置く場所（会場）を、部品で作る・直す。決まり（止める・赤・黄）で無理を知らせる。</td></tr>
+      <tr><td>研究室</td><td><a href="http://localhost:5199/lab.html">localhost:5199/lab.html</a></td><td>噴水1種類だけを、描き方を変えて見比べる試験台。ショーを作るときは使わなくてよい。</td></tr>
+    </table>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/20-editor.jpg" alt="エディタ"><figcaption>エディタ（edit.html）。上が 3D、下が時間軸、右がキューの設定</figcaption></figure>
+      <figure><img loading="lazy" src="img/40-venue-lagoon.jpg" alt="会場"><figcaption>会場（venue.html）。真上から見た図で部品を動かす</figcaption></figure>
+      <figure><img loading="lazy" src="img/14-lab.jpg" alt="研究室"><figcaption>研究室（lab.html）。左上でノズル・描画・カメラ・色・照明を選ぶ</figcaption></figure>
+    </div>
+    <p>ページの行き来：一覧のカード → エディタ。エディタの「▶ 本番で再生」→ 本番画面（そのプロジェクト）。本番画面の「← エディタに戻る」→ エディタ。エディタの「← 一覧」→ 一覧。エディタの「会場 ▾」→「この会場を編集 ↗」→ 会場。会場の「← 時間軸」→ 開いた元のエディタ。</p>
+  </article>
+
+  <article class="cmp" id="start-5min">
+    <h3>5分で一通り試す</h3>
+    <ol class="steps">
+      <li><code>npm run dev</code> のあと、<a href="http://localhost:5199/">localhost:5199/</a> を開き「プロジェクト一覧」→ 見本「Night Lagoon」→「作ってエディタで開く」。</li>
+      <li>エディタ右上の「▶ 本番で再生」→「▶ 再生」（ここで初めて音が鳴る）。下のバーで 1:00 あたりへ動かす。</li>
+      <li>66 秒の色替え（ピンク）を観る。<kbd>Space</kbd> で止める。</li>
+      <li>キーの <kbd>2</kbd> を押す（カメラが「目線」になる）。<kbd>1</kbd> で「客席」に戻る。</li>
+      <li>キーの <kbd>L</kbd> を押す（照明がリアル→理想に変わる）。もう一度で戻る。</li>
+      <li>下のバーの「← エディタに戻る」を押す（エディタのタブに戻る）。</li>
+      <li>エディタの時間軸で、色の付いた四角（キュー）を1つ押す（右に設定が出る）。</li>
+      <li>右の「警告」タブを押して、一覧を見る。</li>
+      <li>上の「会場：ラグーン ▾」→「この会場を編集 ↗」を押す（会場の画面が開く）。</li>
+      <li>「← 時間軸」で戻り、「▶ 本番で再生」で本番画面に戻る。</li>
+    </ol>
+  </article>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="theme" id="player" data-short="本番画面">
+  <h2><span class="n">2</span>本番画面</h2>
+  <p class="intro">ショーを観る画面。下のバーは、再生中にマウスを止めると隠れ、動かすと出ます。</p>
+
+  <article class="cmp" id="player-versions">
+    <h3>版の切り替え</h3>
+    <p><b>版</b>：同じ曲・同じ会場で、演出の中身が違うもの。ふだんはプロジェクト一覧の<b>見本</b>として選びます（見本の ⋯ →「▶ 再生だけ見る」）。URL の <code>?show=</code> でも直接開けます。</p>
+    <table class="t">
+      <tr><th>版</th><th>開く URL</th><th>どんな版</th></tr>
+      <tr><td>Night Lagoon</td><td><a href="http://localhost:5199/play.html">/play.html</a>（<code>?show=</code> なし）</td><td>決まった基本の演出。中身は変えない約束。</td></tr>
+      <tr><td>ファンタジア版</td><td><a href="http://localhost:5199/play.html?show=fantasia">/play.html?show=fantasia</a></td><td>冒頭を水幕の映像で始め、1:06 の色替えを持ち上げた版。</td></tr>
+      <tr><td>花火版</td><td><a href="http://localhost:5199/play.html?show=hanabi">/play.html?show=hanabi</a></td><td>Night Lagoon に、フィナーレとラストの花火を足した版。</td></tr>
+      <tr><td>プロジェクト</td><td><code>/play.html?project=id</code></td><td>そのプロジェクトの演出（エディタの「▶ 本番で再生」と同じ）。<code>?show=edited</code> は最後にエディタで開いたプロジェクト。</td></tr>
+      <tr><td>確かめ用</td><td><code>?show=pyrotest</code>・<code>?show=test</code></td><td>花火の試し打ち、短い試験の演出。ふだんは使わない。</td></tr>
+    </table>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/11-fantasia.jpg" alt="ファンタジア版"><figcaption>ファンタジア版 1:04 ごろ（シアンの扇）</figcaption></figure>
+      <figure><img loading="lazy" src="img/12-hanabi.jpg" alt="花火版"><figcaption>花火版 180 秒、カメラ「花火と水」（ラストのサビの陸の花火）</figcaption></figure>
+    </div>
+    <p>スタート画面の題とブラウザのタブの名前は、開いた版の名前になります（「Night Lagoon」「Night Lagoon — Fantasia」「Night Lagoon — 花火」）。</p>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/15-start-hanabi.jpg" alt="花火版のスタート画面"><figcaption><code>?show=hanabi</code> で開いたスタート画面。題が「Night Lagoon — 花火」</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-play">
+    <h3>再生・シーク</h3>
+    <ol class="steps">
+      <li>「ショーを始める」を押す（音が鳴り、再生が始まる）。</li>
+      <li>左下の ▶ か <kbd>Space</kbd> で、再生・一時停止。</li>
+      <li>波形の帯をクリックかドラッグして、好きな時刻へ移る（シーク）。</li>
+      <li><kbd>→</kbd> で 5 秒先へ、<kbd>←</kbd> で 5 秒前へ。</li>
+    </ol>
+    <ul class="plain">
+      <li>バーの左は「再生・時刻（今／全体）・今の区間」。区間は序章・目覚め・テーマ・物語・高まり・フィナーレ・ラスト・終章。</li>
+      <li>「波形」（<kbd>W</kbd>）：音の波形と、水・光の動きを大きく見る。ドラッグで移動、ホイールで拡大縮小。</li>
+      <li>「水音」（<kbd>S</kbd>）：水しぶきの音の入・切。</li>
+      <li>曲が終わると「おしまい」と出ます。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/02-player.jpg" alt="本番画面の下のバー"><figcaption>止めたところ。下のバーに 再生・時刻・区間 / 波形・水音・音量・カメラ・表示・動画を書き出す・エディタ ↗</figcaption></figure>
+      <figure><img loading="lazy" src="img/06-waveform.jpg" alt="波形"><figcaption>「波形」を押したところ（音の波形と、水・光の帯）</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-view">
+    <h3>画質の段階・照明モード（表示 ▾）</h3>
+    <ol class="steps">
+      <li>下のバーの「表示」を押す。</li>
+      <li>「照明」で「リアル」か「理想」を押す（<kbd>L</kbd> でも切り替わる）。</li>
+      <li>「画質」で「自動・高・中・低」のどれかを押す。</li>
+    </ol>
+    <ul class="plain">
+      <li><b>リアル</b>：実在の機材どおりの光（ノズルの根元の LED リングが照らす）。柱の先や落ちる水は暗くなる。</li>
+      <li><b>理想</b>：見栄えを優先した光（柱のてっぺんまで色が付く）。実在の機材の裏付けはない。</li>
+      <li><b>自動</b>：初めはこれ。描くのが重い（直近の平均が 20 ms を超える）と、1段ずつ下げて「描画が重いため品質を「中」に下げました」と出す。</li>
+      <li><b>高・中・低</b>：決めた画質のまま。<b>低</b> にすると、水面の新しい見た目（5章）も切れて軽くなる。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/04-view.jpg" alt="表示メニュー"><figcaption>「表示」の中：照明（Lキー）リアル／理想、画質 自動／高／中／低</figcaption></figure>
+      <figure><img loading="lazy" src="img/07-ideal.jpg" alt="理想の照明"><figcaption>上の「再生・シーク」の写真と同じ時刻を「理想」で。柱の上まで色が付く</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-camera">
+    <h3>カメラの角度・目線（カメラ ▾）</h3>
+    <ol class="steps">
+      <li>下のバーの「カメラ」を押す。</li>
+      <li>見たい席を押す（数字キー <kbd>1</kbd>〜<kbd>0</kbd> でも選べる）。</li>
+    </ol>
+    <table class="t">
+      <tr><th>キー</th><th>名前</th><th>見え方</th></tr>
+      <tr><td>1</td><td>客席</td><td>客席の少し前・少し高い所。いつもの席。</td></tr>
+      <tr><td>2</td><td>目線</td><td>湖の縁にしゃがんだ目の高さ。柱を見上げる。</td></tr>
+      <tr><td>3</td><td>スクリーン前</td><td>水幕の正面。物語の場面向け。</td></tr>
+      <tr><td>4</td><td>遠景</td><td>湖全体。一番高いガイザーまで入る。</td></tr>
+      <tr><td>5</td><td>水面</td><td>水面すれすれ。柱が頭の上にそびえる。</td></tr>
+      <tr><td>6・7</td><td>左・右</td><td>斜め横から。</td></tr>
+      <tr><td>8</td><td>空撮</td><td>高い所から見下ろす。</td></tr>
+      <tr><td>9</td><td>花火と水</td><td>岸のずっと後ろから見上げる（花火版向け）。</td></tr>
+      <tr><td>0</td><td>花火</td><td>遠くから、花火の写真のように撮る。</td></tr>
+      <tr><td>—</td><td>おまかせ</td><td>音楽に合わせて、カットとカメラワークが自動で変わる。</td></tr>
+      <tr><td>—</td><td>自由</td><td>ドラッグで回す、ホイールで寄る・引く。</td></tr>
+    </table>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/03-camera.jpg" alt="カメラのメニュー"><figcaption>「カメラ」の中。右の数字がキー</figcaption></figure>
+      <figure><img loading="lazy" src="img/08-eye.jpg" alt="目線"><figcaption>「目線」で見たところ</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-volume">
+    <h3>音量（音量 ▾）</h3>
+    <ol class="steps">
+      <li>下のバーの「音量」を押す。</li>
+      <li>「音楽」「水音」「花火」のつまみを動かす（0〜200%）。</li>
+      <li>決めた割合に戻すときは「元に戻す」。</li>
+    </ol>
+    <ul class="plain">
+      <li>100% が基準のバランス（音楽 75%・水音 50%・花火 150% を 100% にしたもの。値は <code>src/audio/levels.ts</code> の <code>MIX</code> の1か所）。</li>
+      <li>動かした値はブラウザが覚えます。動画の書き出しにも効きます。</li>
+    </ul>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/05-volume.jpg" alt="音量"><figcaption>「音量」の中：音楽・水音・花火・元に戻す</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-video">
+    <h3>動画の書き出し（ふつうの動画 MP4）</h3>
+    <ol class="steps">
+      <li>下のバーの「動画を書き出す」を押す。</li>
+      <li>「形式」で「ふつうの動画（MP4）」を選ぶ。</li>
+      <li>「カメラ」で「1か所から撮る」と席、または「おまかせ（いろいろな角度で自動）」を選ぶ。</li>
+      <li>「範囲」で「全編」か「指定」（〇秒から〇秒まで）を選ぶ。</li>
+      <li>「画質」で解像度（1280×720〜3840×2160）と 30／60 fps を選ぶ。</li>
+      <li>「書き出す」を押す。途中でやめるときは「中止」。</li>
+      <li>できたファイルは、ブラウザのダウンロード（ダウンロードフォルダ）に入る。</li>
+    </ol>
+    <ul class="plain">
+      <li>照明は、今の「表示」の照明（リアル／理想）で撮ります。音は音量 ▾ の値で入ります。</li>
+      <li>1コマずつ描くので、ショーの長さより時間がかかります。試すときは 10〜15 秒の「指定」で。</li>
+      <li>書き出しのときは、画質が自動で一番上（書き出し用）になります（5章）。</li>
+    </ul>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/09-export-mp4.jpg" alt="動画を書き出す"><figcaption>「動画を書き出す」の画面（MP4）</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-vr">
+    <h3>Vision Pro 180° の書き出し</h3>
+    <ol class="steps">
+      <li>「動画を書き出す」を押す。</li>
+      <li>「形式」で「Vision Pro（180° 立体）」を選ぶ。</li>
+      <li>「1か所から撮る」の席を選ぶ（おまかせは使えない。カメラは動かない）。</li>
+      <li>「範囲」と「片目 4096」（ふつうはこれ）か「片目 7680」を選ぶ。</li>
+      <li>下に出る「所要」と「ファイル」の大きさを見てから、「書き出す」を押す。</li>
+      <li>書き出し中は、このタブを開いたままにする。</li>
+      <li>終わったら「Finder で表示」を押す（<code>exports/visionpro/</code> に入っている）。</li>
+      <li>AirDrop で Vision Pro に送り、写真アプリで見る。</li>
+    </ol>
+    <div class="note warn">全編だと 2.7 GB・約 130 分かかる表示が出ます。ディスクの空きを先に見てください。片目 7680 は実機での再生を確かめていません。</div>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/10-export-vr.jpg" alt="Vision Pro"><figcaption>Vision Pro（180° 立体）を選んだところ。下に所要時間と大きさ</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="player-url">
+    <h3>URL の付け足し</h3>
+    <p>URL の後ろに <code>?名前=値</code> を付けると、開き方を決められます。2つ以上は <code>&amp;</code> でつなぎます（例：<a href="http://localhost:5199/play.html?show=hanabi&amp;t=160&amp;cam=sky">/play.html?show=hanabi&amp;t=160&amp;cam=sky</a>）。前の形の <code>/?show=…</code> なども、そのまま <code>play.html</code> に回ります。</p>
+    <table class="t">
+      <tr><th>付け足し</th><th>意味</th></tr>
+      <tr><td><code>?project=</code></td><td>プロジェクトの id（<code>projects/</code> のフォルダ名）。見本の id（<code>sample-hanabi</code> など）も使える。</td></tr>
+      <tr><td><code>?show=</code></td><td>版。<code>fantasia</code>・<code>hanabi</code>・<code>edited</code>（最後にエディタで開いたプロジェクト）・<code>pyrotest</code>・<code>test</code>。なしは Night Lagoon。</td></tr>
+      <tr><td><code>?t=秒</code></td><td>その時刻から始める（例 <code>?t=66</code>）。</td></tr>
+      <tr><td><code>?venue=</code></td><td>会場。<code>desk</code>（机）・<code>garden</code>（庭）・<code>plaza</code>（広場）・<code>lagoon</code>、または自分で作った会場の id。</td></tr>
+      <tr><td><code>?cam=</code></td><td>カメラ。<code>audience</code> 客席・<code>eye</code> 目線・<code>screen</code>・<code>wide</code> 遠景・<code>low</code> 水面・<code>left</code>・<code>right</code>・<code>aerial</code> 空撮・<code>sky</code> 花火と水・<code>pyro</code> 花火・<code>auto</code> おまかせ・<code>free</code> 自由。</td></tr>
+      <tr><td><code>?light=</code></td><td>照明。<code>real</code>（リアル）か <code>ideal</code>（理想）。</td></tr>
+      <tr><td><code>?quality=</code></td><td>画質を決めたままにする。<code>high</code>・<code>medium</code>・<code>low</code>。</td></tr>
+      <tr><td><code>?gfx=</code></td><td>確かめ用。<code>off</code>＝水面の新しい見た目を全部切る（前の見た目）。<code>impact,surface,mist</code> のうち書いたものだけ入れる。<code>all</code>＝全部。</td></tr>
+      <tr><td><code>?music=</code></td><td>自作の曲を作って流す。<code>score</code>（ラプソディー・イン・ブルーの編曲）か <code>original</code>（合成音の曲）。</td></tr>
+      <tr><td><code>?view=x,y,z,tx,ty,tz,fov</code></td><td>確かめ用。カメラの位置・向き・画角を数字で決める（比べる写真を撮るとき）。</td></tr>
+      <tr><td><code>?shot</code>・<code>?perf</code></td><td>確かめ用（道具が使う）。<code>shot</code>＝バーを隠して止めた絵、<code>perf</code>＝重さを測る。</td></tr>
+      <tr><td><code>?pw=</code>・<code>?ph=</code></td><td>確かめ用。水幕の映像の解像度（初め 1536×288）。</td></tr>
+    </table>
+    <p>エディタは <code>edit.html?project=id</code>・<code>?t=秒</code>・<code>?quality=</code>、確認用の <code>edit.html?fresh</code>（確認用の自動保存を読まずに開く）、会場は <code>venue.html?venue=id</code> が使えます。</p>
+  </article>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="theme" id="editor" data-short="エディタ">
+  <h2><span class="n">3</span>エディタ</h2>
+  <p class="intro">時間軸で演出を作る画面（<code>edit.html</code>）。上の帯：← 一覧・プロジェクト名・ファイル ▾・書き出し ▾・会場 ▾・↶ ↷・再生・照明・画質・視点リセット・ミュート・▶ 本番で再生。左上が 3D、左下が時間軸、右が「キュー｜警告」。</p>
+
+  <article class="cmp" id="editor-tabs">
+    <h3>タブ（全体・水・光・水幕・花火）</h3>
+    <p>時間軸の上のタブは「作業画面」です。押すと、開くフォルダと 3D の視点が、その作業に合わせて変わります。演出の中身は変わりません。</p>
+    <table class="t">
+      <tr><th>タブ</th><th>見え方</th></tr>
+      <tr><td>全体</td><td>全部のフォルダをたたんだ要約。重なりと密度を見る。</td></tr>
+      <tr><td>水</td><td>水のフォルダを開く。</td></tr>
+      <tr><td>光</td><td>色と明るさを作る。色や明るさを変えないキューは薄く出る。</td></tr>
+      <tr><td>水幕</td><td>水幕のフォルダを開く。</td></tr>
+      <tr><td>花火</td><td>花火のフォルダを開き、3D を席「花火」にする（花火がある版だけ）。</td></tr>
+    </table>
+    <ul class="plain">
+      <li>タブごとに、開いたフォルダ・S/M・3D の視点を覚えます（ブラウザが覚える。演出ファイルには入らない）。</li>
+      <li>最初の見方に戻すときは、タブの右の「このタブを最初の見方に戻す」。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/24-water-tab.jpg" alt="水タブ"><figcaption>「水」のタブ。水のフォルダが開き、グリッド・ウィップなどの行が並ぶ</figcaption></figure>
+      <figure><img loading="lazy" src="img/29-light-tab.jpg" alt="光タブ"><figcaption>「光」のタブ。色や明るさを変えないキューは薄い</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-folders">
+    <h3>フォルダと S／M</h3>
+    <p><b>フォルダ</b>：時間軸の行を「水・水幕・花火」にまとめたもの。</p>
+    <ol class="steps">
+      <li>フォルダの見出し（「水」など）を押すと、たたむ・開く。</li>
+      <li>たたむと細い帯になる。警告のあるキューには小さな三角が付く。</li>
+      <li>見出しの <b>S</b> を押すと、そのフォルダだけを 3D に出す（もう一度で戻る）。</li>
+      <li>見出しの <b>M</b> を押すと、そのフォルダを 3D から消す（もう一度で戻る）。</li>
+      <li>行の名前（「グリッド」など）を押すと、その行の台を 3D で縁取る（<kbd>Esc</kbd> で消える）。</li>
+    </ol>
+    <div class="note">S／M はエディタの 3D の見え方だけです。保存・本番画面・書き出しには入りません。</div>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/26-solo.jpg" alt="S"><figcaption>水の S を押したところ。見出しの S が琥珀色、3D は「水だけ」</figcaption></figure>
+      <figure><img loading="lazy" src="img/27-folded.jpg" alt="たたんだ"><figcaption>水のフォルダをたたんだところ</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-cues">
+    <h3>レーンとキュー（作る・動かす・消す）</h3>
+    <p><b>レーン</b>：時間軸の1行（グリッド・ウィップなど、機材のまとまりごと）。<b>キュー</b>：その時刻に機材をどう動かすかの指示1つ。時間軸の四角が1つのキューです。</p>
+    <h4>作る</h4>
+    <ol class="steps">
+      <li>キューを置きたいレーンの、空いた所をダブルクリックする（拍に吸い付く。<kbd>Alt</kbd> を押しながらだと吸い付かない）。</li>
+      <li>右の「キュー」に設定が出る。「時刻」「ターゲット」「設定値 (set)」「動き」「マクロ」を入れる。</li>
+    </ol>
+    <h4>動かす・長さを変える・選ぶ</h4>
+    <ol class="steps">
+      <li>四角をドラッグして動かす（拍に吸い付く。<kbd>Alt</kbd>＋ドラッグで吸い付かない）。</li>
+      <li>四角の右端をドラッグして、長さ（dur）を変える。</li>
+      <li><kbd>Shift</kbd>＋クリックで、いくつも選ぶ。空いた所をドラッグして、範囲で選ぶ。</li>
+      <li><kbd>←</kbd> <kbd>→</kbd> で、選んだキューを 1 拍ずつ動かす（<kbd>Alt</kbd> で 0.05 秒）。</li>
+      <li><kbd>⌘</kbd>+<kbd>D</kbd> で 1 小節後に複製する。</li>
+    </ol>
+    <h4>消す</h4>
+    <ol class="steps">
+      <li>キューを選ぶ。</li>
+      <li><kbd>Delete</kbd> か <kbd>Backspace</kbd> を押す（右の「削除 (Delete)」でもよい）。</li>
+    </ol>
+    <h4>そのほかの操作</h4>
+    <ul class="plain">
+      <li>ルーラー（目盛りの帯）をクリックで、再生位置を移す。<kbd>Space</kbd> で再生・一時停止、<kbd>Home</kbd> で先頭へ。</li>
+      <li><kbd>⌘</kbd>＋ホイールで横に拡大、ホイールで縦、<kbd>Shift</kbd>＋ホイールで横に動く。</li>
+      <li>右の欄の下の方に「JSON (直接編集)」があり、キューを文字で直して「JSON を適用 (⌘/Ctrl+Enter)」。</li>
+      <li>何も選んでいないとき、右の欄は「ショー設定」（タイトル・BPM・拍子・オフセット・長さ・区間）と「操作」の一覧になる。</li>
+    </ul>
+    <h4>プロジェクターの行（水幕のフォルダ）</h4>
+    <p>水幕の映像は、幕の後ろの<b>プロジェクター</b>が出します。水幕（横長・3つの山）の行は霧の高さ（水圧）だけ、映像の明るさと何を映すかは「プロジェクター」の行で決めます。作る・動かす・消す・⌘Z は、ほかの行と同じです。</p>
+    <ol class="steps">
+      <li>「水幕」タブを押し、「プロジェクター」の行の空いた所をダブルクリック（「全部 int 1」のキューができる）。</li>
+      <li>右の「区画」で 全部・左・中央・右 を選ぶ（3つの山の列。ブロックの頭に区画の名前が出る）。</li>
+      <li>「設定値」の「明るさ」を決める（0〜1.5。1.5 がプロジェクターの最大）。</li>
+      <li>「映像 (プロジェクター)」で場面か動画を選ぶ。「この場面だけを流す」に ✓ で、前後の場面が重ならない。</li>
+    </ol>
+    <p>行の下の3本の線（上から左・中央・右）：<b>明るい線</b>＝映像が霧に映っている、<b>薄い線</b>＝下げた後に残る霧に映っている、<b>黄色</b>＝霧が無いのに映している。</p>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/36-projector-lane.jpg" alt="プロジェクターの行"><figcaption>2:38.46 の「中央 int 1.4」（中央の山に月の光だけ）を選んだところ。3D に中央の区画の橙の枠、行の下に3本の線</figcaption></figure>
+      <figure><img loading="lazy" src="img/37-screen-mist.jpg" alt="水幕のキュー"><figcaption>水幕（中央の山）のキュー：設定値は水圧だけ。映像の明るさはプロジェクターの行で</figcaption></figure>
+    </div>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/25-cue.jpg" alt="キューを選んだ"><figcaption>ウィップの「∿ spread」（隊形のマクロ）を選んだところ。右に 基本・設定値・動き・マクロ</figcaption></figure>
+      <figure><img loading="lazy" src="img/20-editor.jpg" alt="ショー設定"><figcaption>何も選んでいないとき：右に「ショー設定」・区間・「操作」の一覧</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-pick">
+    <h3>3D で選ぶ（橙の枠）</h3>
+    <ol class="steps">
+      <li>上の 3D で、水の柱をクリックする。</li>
+      <li>その台を今動かしているキューが選ばれ、フォルダが開く。</li>
+      <li>クリックした台は琥珀色（橙）の線、同じキューのほかの台は暗い琥珀の線で囲まれる。</li>
+      <li>水幕のキューを選ぶとその幕、プロジェクターのキューを選ぶとその区画（幕の列）と、後ろのプロジェクター本体が囲まれる。</li>
+      <li>3D の上に札「グリッド 43番 ← #261 ∿ pulse（2:55.13〜）」のように、台とキューが出る。</li>
+      <li><kbd>Esc</kbd> で選ぶのをやめる。</li>
+    </ol>
+    <div class="figs one">
+      <figure><img loading="lazy" src="img/30-3d-click.jpg" alt="3D で選ぶ"><figcaption>175 秒で、グリッドの柱をクリックしたところ（縁取りと札）</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-warn">
+    <h3>警告の一覧</h3>
+    <ol class="steps">
+      <li>右の「警告」タブを押す（数字は「書いたとおりに動かない」の数）。</li>
+      <li>行をクリックすると、そのキューを選んでその時刻へ移る。ダブルクリックで設定を開く。</li>
+    </ol>
+    <table class="t">
+      <tr><th>見出し</th><th>中身</th></tr>
+      <tr><td><span class="dot red"></span>危ない</td><td>花火の保安距離・傾き。</td></tr>
+      <tr><td><span class="dot yel"></span>書いたとおりに動かない</td><td>首振りが速すぎる（上限 90°/秒に落として動く）・水が上がりきらない（ポンプが全開になる前に下げている）・この会場で動かない。</td></tr>
+      <tr><td>お知らせ（自動で合わせた）</td><td>光を LED の速さに合わせた、など。プロジェクターの「霧の無い所に映している」「霧を下げた後も映している」もここに出る。長いので、ふだんはたたんである。</td></tr>
+    </table>
+    <p>数字は目安で、実機の応答は機材によって違います。花火の警告は、実際の許可の代わりにはなりません。</p>
+    <div class="figs one">
+      <figure><img loading="lazy" src="img/28-warnings.jpg" alt="警告の一覧"><figcaption>Night Lagoon（音楽を読んだあと）：危ない 0・書いたとおりに動かない 38・お知らせ 112（プロジェクターの2つを含む）</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-undo">
+    <h3>元に戻す・やり直す</h3>
+    <ul class="plain">
+      <li>元に戻す：上の帯の ↶、または <kbd>⌘</kbd>+<kbd>Z</kbd>。</li>
+      <li>やり直す：上の帯の ↷、または <kbd>⇧</kbd>+<kbd>⌘</kbd>+<kbd>Z</kbd>（<kbd>⌘</kbd>+<kbd>Y</kbd> でも）。</li>
+      <li>版の読み込み・新規ショー・会場の切り替えも <kbd>⌘</kbd>+<kbd>Z</kbd> で戻せます。</li>
+      <li>戻せるのは直近 <b>300 回</b>まで。それより多く直したあと一番前まで戻ると、「ここより前には戻せません（…）」と出ます。そのときは「ファイル ▾」から版を読み込み直すと最初の形に戻せます。</li>
+      <li>右のインスペクターの欄に文字を打っている間の <kbd>⌘</kbd>+<kbd>Z</kbd> は、その欄の中の打ち直しです。演出を戻すときは、欄の外（3D やタイムライン）を一度押してから。</li>
+    </ul>
+  </article>
+
+  <article class="cmp" id="editor-save">
+    <h3>保存と読み込み（ファイル ▾）</h3>
+    <p>直したものは、開いているプロジェクトに<b>自動保存</b>されます（上の帯に「自動保存済み」。<code>projects/&lt;id&gt;/project.json</code>）。次に一覧から開くと続きから。別のファイルに残すときは JSON で書き出します。</p>
+    <ol class="steps">
+      <li>上の帯の「ファイル ▾」を押す。</li>
+      <li>ファイルに残す：「JSON を書き出す」（ブラウザのダウンロードに <code>タイトル.json</code> が入る）。</li>
+      <li>ファイルから開く：「JSON を読み込む…」でファイルを選ぶ。</li>
+      <li>別のプロジェクトとして続ける：「複製して別のプロジェクトにする」（コピーが開く）。</li>
+      <li>中身を版にする：「Night Lagoon (今の演出) で置き換える」「ファンタジア版で置き換える」「花火版で置き換える」。空にする：「空のショーにする」。</li>
+    </ol>
+    <div class="note warn">「置き換える」と「JSON を読み込む」は、開いているプロジェクトの中身を上書きします（<kbd>⌘</kbd>+<kbd>Z</kbd> で戻せる）。残したいときは先に「複製して別のプロジェクトにする」。</div>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/21-file-menu.jpg" alt="ファイル"><figcaption>「ファイル ▾」の中</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-venue">
+    <h3>会場の切り替え（会場 ▾）</h3>
+    <ol class="steps">
+      <li>上の帯の「会場：ラグーン ▾」を押す。</li>
+      <li>「机の水槽・庭の池・広場の床噴水・ラグーン」か、「自分の会場（この端末）」から選ぶ。</li>
+      <li>レーン・台数・3D がその会場になる。動かないキューの数がお知らせに出る。</li>
+      <li>その会場に無い機材のキューは、灰色のレーン「この会場に無い」に入る。</li>
+      <li>戻すときは <kbd>⌘</kbd>+<kbd>Z</kbd>。会場そのものを直すときは「この会場を編集 ↗」。</li>
+    </ol>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/23-venue-menu.jpg" alt="会場メニュー"><figcaption>「会場 ▾」の中</figcaption></figure>
+      <figure><img loading="lazy" src="img/35-editor-garden.jpg" alt="庭に切り替え"><figcaption>花火版を「庭の池」に切り替えたところ（動かないキュー 311・一部だけ 159、472 のうち）</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-pyro">
+    <h3>花火のキュー</h3>
+    <ol class="steps">
+      <li>「ファイル ▾」→「花火版を読み込む」（花火のフォルダが出る）。</li>
+      <li>「花火」のタブを押す。</li>
+      <li>花火の行で、空いた所をダブルクリックしてキューを足す（◆＝開く時刻、手前の薄い帯＝上がる時間）。</li>
+      <li>右で「種類」（牡丹・菊・柳 など）「号数」「色」「数」「間隔」「傾き 左右」「傾き 前後」「角度の型」「広さ」を決める。</li>
+      <li>保安距離が足りないと、右に赤い ⚠ が出る。号数を下げるか、筒を変える。</li>
+    </ol>
+    <ul class="plain">
+      <li>時刻は「開く瞬間」。打ち上げは、上がる時間ぶん前に自動で決まります。</li>
+      <li>傾き 前後は、奥へ −、客席へ ＋ は赤。30° を超えると黄、45° で止める。</li>
+    </ul>
+    <div class="figs one">
+      <figure><img loading="lazy" src="img/34-pyro.jpg" alt="花火"><figcaption>花火版、「花火」タブで 166.94 秒の X字（交差）のキューを選んだところ</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="editor-export">
+    <h3>書き出し ▾（実機向け）</h3>
+    <p>演出を、実際の噴水や照明の機械が読める形にします。</p>
+    <table class="t">
+      <tr><th>メニューの名前</th><th>ファイル</th><th>中身</th></tr>
+      <tr><td>チャンネル CSV…</td><td>.csv</td><td>水の機材は全部のチャンネル（圧力・左右・前後・色・明るさ）、水幕は水圧、プロジェクターは区画の明るさを、コマごとに1行。全編だと約 77 MB。</td></tr>
+      <tr><td>DMX の割り当て表…</td><td>.csv</td><td>機材ごとのユニバース・番地・チャンネルの並び（1台1行）。</td></tr>
+      <tr><td>キュー表…</td><td>.csv</td><td>人が読む台本：時刻・場面・機材・何をするか（キュー1つで1行）。列 <code>media_server</code> に、プロジェクターのメディアサーバーへの合図（どのクリップを何秒から、例「クリップ「ビルド — 放射する光」だけ・2秒から」）。</td></tr>
+      <tr><td>花火の点火表…</td><td>.csv</td><td>玉1発で1行：点火の時刻（開く時刻−上がる時間）・筒・角度・玉・警告。</td></tr>
+      <tr><td>DMX の記録…</td><td>.dmxrec</td><td>コマごとに、ユニバースごとの DMX の値 512 個（割り当て表のとおり）。約 18 MB。</td></tr>
+      <tr><td>Art-Net で送る…</td><td>—</td><td>再生に合わせて、今の時刻の DMX の値を送り続ける。</td></tr>
+      <tr><td>動画・Vision Pro 180°（本番画面で）↗</td><td>—</td><td>本番画面を開く。そこの「動画を書き出す」から（2章）。</td></tr>
+    </table>
+    <h4>書き出す手順</h4>
+    <ol class="steps">
+      <li>上の帯の「書き出し ▾」を押し、形式を選ぶ。</li>
+      <li>「タイムコード」のコマ数（40／30／25／44 fps）と「開始」（ショーの 0 秒の時:分:秒:コマ）を決める。どの形式も同じ設定。</li>
+      <li>「範囲」で「全編」か「指定」を選ぶ（試すときは短く）。</li>
+      <li>下の大きさの目安を見て、「書き出す」を押す。</li>
+      <li>「書き出しました：exports/control/〜」と出たら、「Finder で表示」で開く。</li>
+    </ol>
+    <div class="note"><b>置き場所</b>：開発サーバー（<code>npm run dev</code>）で開いているときは <code>exports/control/</code>（例 <code>Night_Lagoon_cue-sheet_40fps.csv</code>）。build した形で開いたときは、ブラウザのダウンロード。演出の JSON は、いつもブラウザのダウンロード。<br>理想の照明で水の LED の明るさが 1 を超える所は、DMX では 255 で止まります（書き出す前に黄色い注意が出る）。<br><b>プロジェクター</b>は区画ごとに DMX 1チャンネル「明るさ」。255 がプロジェクターの最大（明るさ 1.5、<code>src/fixtures/screen.ts</code> の <code>PROJECTOR_MAX</code> の1か所）なので、1.4 は 238 で、止まらずに出ます。水幕は水圧の1チャンネルだけ。何を映すかは DMX ではなく、キュー表の <code>media_server</code> の列です。</div>
+    <h4>Art-Net で送る</h4>
+    <ol class="steps">
+      <li>「書き出し ▾」→「Art-Net で送る…」を押す。</li>
+      <li>「送り先」の IP とポート（初め 127.0.0.1・6454）を入れる。127.0.0.1 はこのパソコン自身。</li>
+      <li>「送る」を押す。上の帯に「Art-Net 送信中」が出る。</li>
+      <li>再生・一時停止・移動に合わせて値が送られる。</li>
+      <li>やめるときは「止める」。</li>
+    </ol>
+    <div class="note">Art-Net は開発サーバーで開いているときだけ使えます。受けて確かめる道具：<code>node scripts/artnet-listen.mjs</code>。実機や表示ソフトでの受信は、まだ確かめていません。</div>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/22-export-menu.jpg" alt="書き出しメニュー"><figcaption>「書き出し ▾」の中</figcaption></figure>
+      <figure><img loading="lazy" src="img/31-cx-dialog.jpg" alt="実機向けに書き出す"><figcaption>「実機向けに書き出す」の画面（キュー表を選んだところ）</figcaption></figure>
+      <figure><img loading="lazy" src="img/32-cx-done.jpg" alt="書き出し済み"><figcaption>書き出したあと。保存先と中身の頭が出る</figcaption></figure>
+      <figure><img loading="lazy" src="img/33-artnet.jpg" alt="Art-Net"><figcaption>「Art-Net で送る」の画面</figcaption></figure>
+    </div>
+  </article>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="theme" id="venue" data-short="会場エディタ">
+  <h2><span class="n">4</span>会場エディタ</h2>
+  <p class="intro">噴水を置く場所（会場）を、部品で作る画面（<code>venue.html</code>）。エディタの「会場 ▾」→「この会場を編集 ↗」からも開きます。左：会場の設定と部品の一覧、真ん中：真上から見た図、右：選んだ部品と警告、下：機材の数。</p>
+
+  <article class="cmp" id="venue-builtin">
+    <h3>組み込みの会場</h3>
+    <table class="t">
+      <tr><th>id</th><th>名前</th><th>大きさ</th><th>開く</th></tr>
+      <tr><td>desk</td><td>机の水槽</td><td>60×30 cm（規模：机）</td><td><a href="http://localhost:5199/venue.html?venue=desk">venue.html?venue=desk</a></td></tr>
+      <tr><td>garden</td><td>庭の池</td><td>直径 3 m（規模：庭）</td><td><a href="http://localhost:5199/venue.html?venue=garden">venue.html?venue=garden</a></td></tr>
+      <tr><td>plaza</td><td>広場の床噴水</td><td>30×20 m（規模：広場）</td><td><a href="http://localhost:5199/venue.html?venue=plaza">venue.html?venue=plaza</a></td></tr>
+      <tr><td>lagoon</td><td>ラグーン</td><td>湖（3つの版の会場）</td><td><a href="http://localhost:5199/venue.html?venue=lagoon">venue.html?venue=lagoon</a></td></tr>
+    </table>
+    <ul class="plain">
+      <li>組み込みの会場を直すと、最初の変更で「〇〇の写し」ができます（元は変わらない）。</li>
+      <li>自分の会場は、この端末のブラウザに保存されます（「この端末に保存済み」）。</li>
+      <li>「会場 ▾」：新しい会場・この会場を写す・JSON を書き出す・JSON を読み込む…・この会場を消す…。</li>
+      <li>書き出した JSON を <code>src/venues/builtin/</code> に置くと、組み込みの会場になります。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/46-desk.jpg" alt="机"><figcaption>机の水槽</figcaption></figure>
+      <figure><img loading="lazy" src="img/43-garden.jpg" alt="庭"><figcaption>庭の池（部品「真ん中」を選んだところ）</figcaption></figure>
+      <figure><img loading="lazy" src="img/47-plaza.jpg" alt="広場"><figcaption>広場の床噴水</figcaption></figure>
+      <figure><img loading="lazy" src="img/41-venue-menu.jpg" alt="会場メニュー"><figcaption>会場の画面の「会場 ▾」</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="venue-parts">
+    <h3>部品の置き方</h3>
+    <ol class="steps">
+      <li>左の「会場」で、名前・規模（机・庭・広場・湖）・水面（果てなし・長方形・円・帯・角の丸い長方形）と大きさを決める。</li>
+      <li>図の左上で、水の機材を選ぶ（例「庭の噴き上げ（庭・垂直 1 m）」）。</li>
+      <li>左下の「＋ 部品を足す ▾」で、部品を選ぶ。</li>
+      <li>図で部品をドラッグして動かす（□：端・中心、○：半径・幅）。吸い付きは図の上に出る（<kbd>Alt</kbd> で外す）。</li>
+      <li>右の欄で、名前・機材・グループ・台数・位置を数字で直す。</li>
+      <li>1台だけ置くときは、図の左上の「1台を置く」を押し、図をクリック（<kbd>Esc</kbd> で「選ぶ・動かす」に戻る）。</li>
+      <li>並びの中の1台は、その台をクリックしてドラッグで「ずらす」、または「この1台を外す」。</li>
+      <li>消すときは <kbd>Delete</kbd>、または右の「部品を消す」。</li>
+      <li>できたら、右上の「3Dで見る」で本番画面を開く（エディタの演出があればそれ、無ければ Night Lagoon）。</li>
+    </ol>
+    <table class="t">
+      <tr><th>部品</th><th>どんな並び</th></tr>
+      <tr><td>列</td><td>まっすぐ等間隔。</td></tr>
+      <tr><td>帯</td><td>2列の千鳥（1台おきに後ろへ下がる）。</td></tr>
+      <tr><td>弧</td><td>中心・半径・始めと終わりの角度（0° は右、90° は客席の方）。</td></tr>
+      <tr><td>円</td><td>中心・半径・1台目の角度。</td></tr>
+      <tr><td>1台</td><td>位置を決めて1台。</td></tr>
+      <tr><td>水幕</td><td>横長の幕、または山（丸い霧）。</td></tr>
+      <tr><td>プロジェクター</td><td>水幕の映像を出す機材（会場に1台）。位置・高さ・向ける点・当てる水幕。図では小さな四角と、当てる水幕の両端への線。□で本体、○で向ける点を動かす。区画（左・中央・右）は当てる山の列に合わせて自動で分かれる。置かなければ、横長の幕の 40 m 後ろから全部の水幕に当たるものが入る。</td></tr>
+      <tr><td>花火の台</td><td>水上の台か陸。筒の数・高さ。客席までの距離から「ここから打てるのは〇号まで」が出る。</td></tr>
+      <tr><td>客席</td><td>客席の一番前の線。花火の保安距離と飛沫の判定に使う。</td></tr>
+    </table>
+    <div class="note">部品の順番（「↑ 前へ」「↓ 後へ」）と、外した台は、同じグループの中の番号の振り方に効きます。番号で書いたキュー（<code>grid[10-20]</code> など）が指す台も変わります。図の操作：右ドラッグで見る位置、ホイールで拡大、右下の「全体」で会場全体。</div>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/44-add-menu.jpg" alt="部品を足す"><figcaption>「＋ 部品を足す ▾」の中</figcaption></figure>
+      <figure><img loading="lazy" src="img/48-venue-projector.jpg" alt="プロジェクター"><figcaption>ラグーンのプロジェクターを選んだところ（右に 位置・高さ・向ける点・当てる水幕）</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="venue-rules">
+    <h3>決まり（止める・赤・黄）の意味と直し方</h3>
+    <p>右の「警告」に、会場の無理が3段で出ます。数は見出しに「止める 0・赤 1・黄 2」のように出ます。警告は目安で、実際の許可の代わりにはなりません。</p>
+    <table class="t">
+      <tr><th>段</th><th>名前</th><th>何が起きている</th><th>直し方</th></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>組み立てられない</td><td>1つのグループに違う種類がある、など。</td><td>グループの名前を分ける。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>水の外</td><td>機材・水幕が水面の外。</td><td>部品を水の中へ動かすか、水面を大きくする。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>置き場の違い</td><td>陸の花火の台が水の上、水上の台が水の外。</td><td>「置き場」を変えるか、台を動かす。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>重なり</td><td>同じ種類どうしが、決まった間隔より近い。</td><td>台数を減らすか、間を広げる。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>同じ場所</td><td>違う種類が、ほぼ同じ場所にある。</td><td>どちらかを動かす。</td></tr>
+      <tr><td><span class="dot red"></span>赤</td><td>花火の保安距離</td><td>一番小さい玉（2.5号）でも客席に近すぎる。</td><td>花火の台を客席から離す。</td></tr>
+      <tr><td><span class="dot red"></span>赤</td><td>水が客席に届く</td><td>首振りを客席側へ倒すと、水としぶきが客席に入る。</td><td>機材を下げるか、演出で客席側へ倒す角度を文の角度までにする。</td></tr>
+      <tr><td><span class="dot red"></span>赤</td><td>花火が水幕にかかる</td><td>開く位置が水幕にかかる。</td><td>花火の台か水幕を動かす。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>近すぎ</td><td>違う種類どうしが近い。</td><td>実機の大きさで収まるか確かめる。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>水盤の外に落ちる</td><td>縁までが、水の高さや着水点より近い。</td><td>縁から離すか、水面を広げる。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>ポンプの合計</td><td>流量の合計が、規模の目安（机 0.3・庭 5・広場 150・湖 5,000 L/s）を超える。</td><td>台数を減らす。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>描画の重さ</td><td>飛沫の粒が 45万を超える（3D が重くなる）。</td><td>台数を減らす。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>客席が無い</td><td>花火と飛沫を確かめられない。</td><td>部品「客席」を足す。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>プロジェクター</td><td>どの水幕にも当たっていない／当てる水幕の方を向いていない（向きから 60° より外）／水幕の客席側にある（前から映すと幕の後ろの物にも像が当たり、光が客席へ向く）。</td><td>「当てる水幕」を選ぶ、○で向きを直す、□で水幕の後ろへ動かす。</td></tr>
+    </table>
+    <ol class="steps">
+      <li>右の警告の行を押す（その部品が選ばれ、図に印が出る）。</li>
+      <li>部品を動かす・数字を直す。</li>
+      <li>警告が消えたのを確かめる。「止める」があるあいだは「3Dで見る」が押せない。</li>
+    </ol>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/45-garden-stop.jpg" alt="止める"><figcaption>庭の池に「1台」を足し、位置を水の外（x 3 m）にしたところ：「止める 1」、3Dで見る は押せない。組み込みなので「庭の池の写し」ができた</figcaption></figure>
+      <figure><img loading="lazy" src="img/40-venue-lagoon.jpg" alt="ラグーンの警告"><figcaption>ラグーン：止める 0・赤 1（ウィップを客席側へ全開で倒すと 60 m 先・客席まで 39 m）・黄 2</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="venue-table">
+    <h3>機材表と、下の数</h3>
+    <p>右の欄の「機材」で選べる水の機材です（高さ・流量などの数字は仮。<code>src/fixtures/water.ts</code>）。</p>
+    <table class="t">
+      <tr><th>名前（画面の表示）</th><th>どんな機材</th><th>向く規模</th></tr>
+      <tr><td>グリッド（垂直 12 m）</td><td>まっすぐ上へ噴く。大勢で並べて面を作る。</td><td>湖</td></tr>
+      <tr><td>ウィップ（首振り 30 m）</td><td>首を振る、長い柱。むちのようにしなる。</td><td>湖</td></tr>
+      <tr><td>チェイサー（弁 25 m）</td><td>弁でぱっと噴いて止める。順に走らせる。</td><td>湖</td></tr>
+      <tr><td>ファン（扇 15 m）</td><td>扇の形に開く。</td><td>湖</td></tr>
+      <tr><td>フラワー（花 10 m）</td><td>花のように開く。</td><td>湖</td></tr>
+      <tr><td>ガイザー（空気式 61 m）</td><td>空気で一気に高く噴き上げる。</td><td>湖</td></tr>
+      <tr><td>ミニ噴き上げ（机・垂直 0.1 m）</td><td>机の水槽用。</td><td>机</td></tr>
+      <tr><td>庭の噴き上げ（庭・垂直 1 m）</td><td>庭の池用。</td><td>庭</td></tr>
+      <tr><td>小さい扇（庭・扇 0.5 m）</td><td>庭の池用の扇。</td><td>庭</td></tr>
+      <tr><td>床の噴き上げ（広場・垂直 4 m）</td><td>床の下から噴く。</td><td>広場</td></tr>
+      <tr><td>床の首振り（広場・首振り 6 m）</td><td>床の下から首を振る。</td><td>広場</td></tr>
+    </table>
+    <p>画面の下には、水の機材（台）・水幕（枚）・花火の筒（本）・ポンプ（L/s）・飛沫の粒、と「動かないキュー」が出ます。「動かないキュー」を押すと、3つの版をこの会場で流したときの数（動かない・一部だけ・全部）が出ます。</p>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/42-venue-cues.jpg" alt="動かないキュー"><figcaption>ラグーンでの「動かないキュー」：3版とも 0</figcaption></figure>
+    </div>
+  </article>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="theme" id="graphics" data-short="見た目（グラフィック）">
+  <h2><span class="n">5</span>見た目（グラフィック）</h2>
+  <p class="intro">水面に当たる表現（しぶき・泡・波紋）、水面の映り込み、水幕の細かい霧。</p>
+
+  <article class="cmp" id="graphics-auto">
+    <h3>何もしなくても入る</h3>
+    <ul class="plain">
+      <li><b>全部の版・全部の会場に、いつも入っています。</b>見た目やエンジンの改善は、版ごとに選ぶものではありません（版ごとに選ぶのは、自分で作った演出の中身だけ）。</li>
+      <li>画質を「<b>低</b>」にすると、自動で切れます（重いときの逃げ道）。「自動」で重くなって「低」まで下がったときも切れます。</li>
+      <li>動画・Vision Pro を<b>書き出すときは、自動で上がります</b>（粒が3倍・映り込みが細かい・4回描いて平均するモーションブラー）。書き出しの画面で選ぶ所はありません。</li>
+      <li>見比べたいときだけ、確かめ用の <code>?gfx=off</code>（前の見た目）を URL に付けます。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/50-gfx-on.jpg" alt="入"><figcaption>花火版 100 秒・カメラ「水面」：いつもの見た目（しぶき・泡・波紋・光の粒の映り込み）</figcaption></figure>
+      <figure><img loading="lazy" src="img/51-gfx-off.jpg" alt="切"><figcaption>同じ所を <code>?gfx=off</code> で（前の見た目）</figcaption></figure>
+      <figure><img loading="lazy" src="img/52-gfx-low.jpg" alt="低"><figcaption>同じ所を画質「低」で（自動で切れている）</figcaption></figure>
+    </div>
+  </article>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="theme" id="assets" data-short="素材の入れ方">
+  <h2><span class="n">6</span>素材の入れ方</h2>
+  <p class="intro">値や素材は1か所にまとめてあります。置き場フォルダに入れて、短い手順で使います。</p>
+
+  <article class="cmp" id="assets-music">
+    <h3>曲</h3>
+    <ol class="steps">
+      <li>曲のファイルを <code>public/music/background.mp3</code> の名前で置く（.m4a・.ogg・.wav も可）。</li>
+      <li>本番画面とエディタを開き直す（自動で読み、波形を調べて振付を合わせる）。</li>
+      <li>その場で試すだけなら、スタート画面の「音楽ファイルを選ぶ」で選ぶ（保存はされない）。</li>
+    </ol>
+    <div class="note warn">場面の区切り（色・暗転・水幕・ガイザー）は、今の録音で測った時刻（<code>src/show/song.ts</code> の <code>MUSIC</code>）に置いてあります。別の曲にするときは、ここを測り直します（Claude に「曲を替えたい」と頼むと music-to-water が受け持つ）。217 秒より長い曲は、最後をフェードして切ります。</div>
+  </article>
+
+  <article class="cmp" id="assets-video">
+    <h3>水幕の映像</h3>
+    <ol class="steps">
+      <li>エディタで「水幕」のタブを押す。</li>
+      <li>「プロジェクター」の行のキューを選ぶ（無ければダブルクリックで足す）。前に保存した演出では、水幕の行のキューでも映像を選べる。</li>
+      <li>右の「映像 (プロジェクター)」で「動画を取り込む…」を押すか、動画をドロップする。</li>
+      <li>動画は <code>public/videos/</code> に写され、このキューに割り当てられる。</li>
+      <li>「開始位置」と「合わせ方」を決める。そのキューの時刻から、次に映像を決めたキューまで流れる。</li>
+    </ol>
+    <p>作ってある場面（イントロ — 夜空とオーロラ など）も、同じ「映像」の一覧から選べます。</p>
+    <div class="note">映像は水幕ではなく、幕の後ろの<b>プロジェクター</b>が出します（2026-11-08 から）。水幕のキューは霧の高さだけを決め、映像の明るさは水幕のフォルダの「プロジェクター」の行で決めます。キューを選ぶと右に「区画」（全部・左・中央・右）と明るさ、映像の「この場面だけを流す」が出ます。行の下の3本の線（上から左・中央・右）は、映像が霧に映っている所（明るい線）、下げた後の霧に映っている所（薄い線）、霧が無いのに映している所（黄色）です。霧がある所にだけ映り、霧が残れば映像も残ります。前に保存した演出は、開いたときに自動でプロジェクターの指示に置き換わります（ファイルはそのまま）。</div>
+    <div class="figs one">
+      <figure><img loading="lazy" src="img/60-screen-cue.jpg" alt="映像"><figcaption>プロジェクターのキューを選んだところ。右の「映像 (プロジェクター)」に 動画を取り込む…・ドロップの場所、開始位置、この場面だけを流す</figcaption></figure>
+    </div>
+  </article>
+
+  <article class="cmp" id="assets-other">
+    <h3>そのほかの置き場</h3>
+    <table class="t">
+      <tr><th>素材</th><th>置き場</th><th>手順</th></tr>
+      <tr><td>会場</td><td><code>src/venues/builtin/*.json</code></td><td>会場の画面の「JSON を書き出す」で出したファイルを置くと、組み込みの会場の一覧に加わる。</td></tr>
+      <tr><td>花火の音の手本の録音</td><td><code>references/sounds/pyro/</code></td><td>録音と出典（<code>CREDITS.md</code>）を置き、Claude に sound-design で頼む。録音はショーでは鳴らさず、数字を測るだけ。</td></tr>
+      <tr><td>見た目のお手本</td><td><code>references/inbox/</code></td><td>画面の写真（PNG・JPEG・WebP・PDF）を置く。一言は同じ名前の <code>.txt</code>。保存の前に毎回 Claude が聞く（<code>references/README.md</code>）。</td></tr>
+      <tr><td>書体</td><td><code>public/fonts/</code></td><td>woff2 を置き、<code>src/styles/fonts.css</code> の1か所を直す。</td></tr>
+      <tr><td>楽器の音（<code>?music=score</code> 用）</td><td><code>public/samples/fluidr3/</code></td><td>ふだんは触らない。</td></tr>
+    </table>
+    <h4>値の1か所</h4>
+    <table class="t">
+      <tr><th>値</th><th>場所</th></tr>
+      <tr><td>音量の基準（音楽・水音・花火）</td><td><code>src/audio/levels.ts</code> の <code>MIX</code></td></tr>
+      <tr><td>色・字・大きさ（画面の見た目）</td><td><code>src/styles/tokens.css</code></td></tr>
+      <tr><td>会場の決まりの仮の数字</td><td><code>src/venues/rules.ts</code> の頭</td></tr>
+      <tr><td>水の機材の高さ・流量など</td><td><code>src/fixtures/water.ts</code></td></tr>
+      <tr><td>花火の玉の表</td><td><code>src/pyro/shells.ts</code></td></tr>
+      <tr><td>場面の区切りの時刻</td><td><code>src/show/song.ts</code></td></tr>
+    </table>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/01-start.jpg" alt="スタート画面"><figcaption>スタート画面の「音楽ファイルを選ぶ」（その場限り）</figcaption></figure>
+    </div>
+  </article>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="theme" id="skills" data-short="演出を Claude に頼む">
+  <h2><span class="n">7</span>演出を Claude に頼むとき</h2>
+  <p class="intro"><code>.claude/skills/</code> に、噴水ショーの演出チームの仕事を8つのスキルにしてあります。Claude Code でこのフォルダを開いて、ふつうの言葉で頼めば、合うスキルが使われます。名前を言わなくてもかまいません。</p>
+
+  <article class="cmp" id="skills-list">
+    <h3>8つのスキル</h3>
+    <div class="cards">
+      <div><h4>show-director（入口）</h4><p>総合演出。構成・山と谷・ご褒美の瞬間を決め、ほかのスキルを順に呼び、採点表で講評する。</p><p class="ask">「フィナーレを良くして」「今のショーを講評して」「メリハリがない」「どこが悪い？」</p></div>
+      <div><h4>music-to-water</h4><p>曲を読み、区間・拍・同期点の「音楽地図」を作り、音を機材に割り振る。</p><p class="ask">「曲を替えたい」「音楽とずれている」「盛り上がりが伝わらない」</p></div>
+      <div><h4>fountain-choreography</h4><p>振付。場面ごとの主役・隊形・動き・時差を決め、キューに落とす。</p><p class="ask">「動きが単調」「忙しすぎる」「この場面の振付を作って」</p></div>
+      <div><h4>show-lighting</h4><p>照明。色の流れ、明るさの強弱、暗転、光で拍を打つ所を決める。</p><p class="ask">「色がうるさい」「どこを見ればいいか分からない」「暗転を入れて」</p></div>
+      <div><h4>water-screen-media</h4><p>水幕の映像。いつ出すか、何を映すか、噴水とのつなぎを決める。</p><p class="ask">「映像が見づらい」「水幕がただの板に見える」「物語が伝わらない」</p></div>
+      <div><h4>fountain-layout</h4><p>機材の配置。種類・数・並び・番号を、客席からの見え方で決める。</p><p class="ask">「奥の噴水が見えない」「端が寂しい」「新しい会場を考えて」</p></div>
+      <div><h4>fountain-physics</h4><p>技術監督。水が上がる・落ちる時間、首振りの速さから、実機で成り立つかを確かめ、時刻を直す。</p><p class="ask">「水が遅れる」「消えきらない」「首振りが速すぎる」「リアルで本物らしいか」</p></div>
+      <div><h4>sound-design</h4><p>音。実物の録音を測った数字から、花火のドン・水しぶきなどをオリジナルで作る。</p><p class="ask">「音がちゃっちい」「本物っぽくない」「この音を作って」</p></div>
+    </div>
+    <ul class="plain">
+      <li>Claude は直す前に「今｜案」の比べる画像や連続コマを見せます。決めるのは自分です。</li>
+      <li>Night Lagoon の中身は変えない約束です。新しい考えは別の版に入ります。</li>
+      <li>調べた原本は <code>docs/show-knowledge/</code>、演出の台本は <code>docs/show-plan.md</code>。</li>
+    </ul>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/70-look-report.jpg" alt="比較レポート"><figcaption>スキルで作った見比べのレポートの例（<code>docs/reports/look-report.html</code>）</figcaption></figure>
+    </div>
+  </article>
+</section>
+
+<!-- ============================================================ 8 -->
+<section class="theme" id="trouble" data-short="困ったとき">
+  <h2><span class="n">8</span>困ったとき</h2>
+  <p class="intro">いま分かっている不具合と、よくある困りごと。詳しくは <a href="../reports/test-results.html">シナリオテストの結果</a> と <code>docs/test-scenarios.md</code> の §7・§8。</p>
+
+  <article class="cmp" id="trouble-bugs">
+    <h3>直った不具合（2026-11-07）</h3>
+    <p>シナリオテストの不合格2件と、このマニュアルを書いていて見つけた4件は直しました。いま分かっている不具合で、テストで不合格のものはありません。</p>
+    <table class="t">
+      <tr><th>前の症状</th><th>いま</th></tr>
+      <tr><td>曲の最後（3:37）で再生が止まらず、コンソールに <code>RangeError: Maximum call stack size exceeded</code> が出続けた（3つの版とも）。</td><td>3:37 で止まり、ボタンが ▶ に戻って「おしまい」と出る。エラーは出ない。</td></tr>
+      <tr><td>エディタで区間の名前を変えたあと Night Lagoon を読み込み直すと、変えた名前が残った。</td><td>読み込んだ演出の区間になる（区間の無い演出なら曲の区間）。</td></tr>
+      <tr><td>⌘Z を何度押しても元に戻らないことがある、と思われていた。</td><td>直近 300 回までは最初まで戻れる（シナリオ 7.7 は 13 回で戻る）。300 回を超えて一番前に着くと、お知らせが出る（上の「元に戻す・やり直す」）。</td></tr>
+      <tr><td>スタート画面の題が、どの版でも「Night Lagoon」だった。</td><td>開いた版の名前が出る（1章「版」）。</td></tr>
+      <tr><td>エディタの「自動保存から復元しました」のお知らせに花火版が無かった。</td><td>「Night Lagoon / ファンタジア版 / 花火版」と全部の版が出る。版の一覧は1か所（<code>choreography.ts</code> の <code>SHOW_VARIANTS</code>）から読むので、版が増えても直さずに済む。</td></tr>
+      <tr><td>キュー表の書き出しの見積もりが「8,681 コマ」だった。</td><td>形式ごとの単位で出る：キュー表「472 キュー」、点火表「53 発」、チャンネル CSV と DMX の記録「8,681 コマ・376 台」、割り当て表「376 台」（花火版の例）。</td></tr>
+      <tr><td><code>README.md</code> が古かった（カメラ・数字キー・スキルの数・Vision Pro・URL）。</td><td>今の作りに合わせた。</td></tr>
+    </table>
+  </article>
+
+  <article class="cmp" id="trouble-known">
+    <h3>そのほか分かっていること（§7）</h3>
+    <ul class="plain">
+      <li>机・庭の小さい規模の水の動き（表面張力・風）は、まだ実物に合わせていません（描く大きさは直した）。</li>
+      <li>演出を小さい会場に合わせて組み替える仕組みはありません。Night Lagoon は机で 444 のうち 330 が動かない（番号で書かれているため。プロジェクターの 14 キューも、机には水幕が無いので動かない）。</li>
+      <li>会場の画面の「元に戻す」は、会場を切り替えると消えます。</li>
+      <li>機材と判定の数字はすべて仮です（<code>src/venues/rules.ts</code> の頭、<code>src/fixtures/water.ts</code>）。</li>
+      <li>キューの数は、音楽を読んだかで変わります（エディタは音楽を読んだ版、会場の画面は読む前の版で数える）。警告の数も同じ。</li>
+      <li>開いたばかりのエディタで、曲の解析が終わる前に会場を切り替えると、会場がラグーンに戻ることがあります。「♪ 音楽と同期」が出てから切り替えてください。</li>
+      <li>注意の黄と差し色の琥珀が近い（判断待ち）。</li>
+      <li>Art-Net の実機・表示ソフトでの受信、Vision Pro 動画の実機での再生は、まだ確かめていません。</li>
+      <li>画面を持たない試験のブラウザでは、通しの途中で画質が自動で「中」「低」に下がることがあります（自動の画質のふつうの動き）。</li>
+    </ul>
+    <div class="figs small">
+      <figure><img loading="lazy" src="img/13-auto-low.jpg" alt="画質を下げた"><figcaption>「描画が重いため品質を「中」に下げました（平均 23 ms）」の表示</figcaption></figure>
+    </div>
+    <h4>まだ決まっていないこと（§8）</h4>
+    <ul class="plain">
+      <li>机の規模の実物を作るか、いつ作るか。</li>
+      <li>演出を小さい会場に合わせて組み替える仕組みを作るか。</li>
+      <li>エディタの残りの候補（吸い付き・波形・⌘C/⌘V・自分でタブを足す）。</li>
+      <li>MVR・点火装置ごとの形式。WebGPU は今は移さない。</li>
+    </ul>
+  </article>
+
+  <article class="cmp" id="trouble-disk">
+    <h3>ディスクがいっぱいのとき</h3>
+    <ol class="steps">
+      <li>空きを見る：ターミナルで <code>df -h .</code>。</li>
+      <li><code>exports/</code> の古い書き出し（<code>exports/control/</code>・<code>exports/visionpro/</code>）を消す。Vision Pro は1本で数 GB。</li>
+      <li><code>shots/</code>（比べる写真・動画、約 2 GB）と <code>backups/</code> の古いものを、要らなければ消す。</li>
+      <li><code>node scripts/control-check.mjs</code> は走らせるたびに約 94 MB の写しを足すので、走らせたあと <code>exports/control/</code> を見る。</li>
+    </ol>
+    <div class="note warn">ふつうの動画（MP4）はダウンロードフォルダに入ります。そちらも見てください。書き出しは、試すときは 10〜15 秒の短い範囲で。</div>
+  </article>
+
+  <article class="cmp" id="trouble-node">
+    <h3>Node.js の更新</h3>
+    <p>Node.js（開発サーバーを動かす土台）を新しくするときは、入れてある部品も一緒に移します。</p>
+<pre class="cmd">nvm install 26 --reinstall-packages-from=26.13.0</pre>
+    <ol class="steps">
+      <li>上のコマンドを打つ。</li>
+      <li>このフォルダで <code>npm install</code> を打つ。</li>
+      <li><code>npm run dev</code> で立ち上がるのを確かめる。</li>
+    </ol>
+  </article>
+
+  <article class="cmp" id="trouble-common">
+    <h3>よくある困りごと</h3>
+    <table class="t">
+      <tr><th>こうなった</th><th>こうする</th></tr>
+      <tr><td>「準備中…」のまま</td><td>音楽を読んでいる。数秒待つ。「音楽なし」と出たら <code>public/music/background.mp3</code> を確かめる。</td></tr>
+      <tr><td>音が出ない</td><td>「ショーを始める」を押すまでは鳴らない。音量 ▾ を見る。エディタは上の帯の「ミュート」を見る。</td></tr>
+      <tr><td>カクカクする</td><td>表示 ▾ の画質を「中」か「低」に。</td></tr>
+      <tr><td>エディタの直しが本番画面に出ない</td><td>エディタの「本番で再生 ↗」で開く（<code>?show=edited</code>）。「自動保存できません」と出ていないか見る。</td></tr>
+      <tr><td>会場の「3Dで見る」が押せない</td><td>「止める」の警告がある。右の警告から直す。</td></tr>
+      <tr><td>Art-Net が送れない</td><td><code>npm run dev</code> で開いているか見る（build した形では使えない）。</td></tr>
+      <tr><td>エディタの検査が1回目に落ちる</td><td><code>editor-check</code> は冷えた開発サーバーで時々落ちる。もう一度走らせる。</td></tr>
+    </table>
+  </article>
+</section>
+
+<!-- ============================================================ 9 -->
+<section class="theme" id="words" data-short="用語集">
+  <h2><span class="n">9</span>用語集</h2>
+  <p class="intro">画面に出る言葉を短く。</p>
+  <article class="cmp" id="words-show">
+    <h3>演出の言葉</h3>
+    <dl class="gl">
+      <dt>版</dt><dd>同じ曲・会場で中身の違う演出。Night Lagoon・ファンタジア版・花火版。</dd>
+      <dt>キュー</dt><dd>「この時刻に、この機材を、こう動かす」という指示1つ。時間軸の四角1つ。</dd>
+      <dt>レーン</dt><dd>時間軸の1行。機材のまとまりごと（グリッド・ウィップ など）。</dd>
+      <dt>フォルダ</dt><dd>レーンを「水・水幕・花火」にまとめたもの。たたむと細い帯。</dd>
+      <dt>S／M</dt><dd>フォルダの見出しのボタン。S＝これだけ 3D に出す、M＝3D から消す。エディタの見え方だけ。</dd>
+      <dt>区間</dt><dd>曲の場面の名前（序章・目覚め・テーマ・物語・高まり・フィナーレ・ラスト・終章）。</dd>
+      <dt>ターゲット</dt><dd>キューが動かす台。<code>grid[0-87]</code>（グリッドの0〜87番）、<code>@名前</code>（会場の部品の名前）など。</dd>
+      <dt>設定値 (set)</dt><dd>水圧・パン（左右の向き）・チルト（前後の傾き）・色・明るさ。</dd>
+      <dt>長さ dur</dt><dd>今の値から新しい値へ移るのにかける秒数。</dd>
+      <dt>イージング</dt><dd>移り方。直線・イーズイン（ゆっくり始まる）・イーズアウト（ゆっくり終わる）・ステップ（即時）。</dd>
+      <dt>時差 stagger</dt><dd>台ごとに少しずつずらす秒数。</dd>
+      <dt>順序 order</dt><dd>時差をかける順番。番号順・逆順・中央から・両端から・ランダム。</dd>
+      <dt>マクロ（∿）</dt><dd>決まった動きの型。wave 波・sway 首振り・pulse パルス（短く噴いて戻る）・chase チェイス（順番に噴く）・bloom 開花・rainbow 虹・spread 隊形（扇・交差）・lean 傾け・follow 追従（音楽の音量に合わせる）。</dd>
+      <dt>拍・小節</dt><dd>曲の拍子。キューの時刻は「小節:拍」（例 25:3）か秒で書ける。</dd>
+    </dl>
+  </article>
+  <article class="cmp" id="words-gear">
+    <h3>機材の言葉</h3>
+    <dl class="gl">
+      <dt>グリッド</dt><dd>まっすぐ上へ噴く噴水を、何十台も並べた面。</dd>
+      <dt>ウィップ</dt><dd>首を振る長い柱。むちのようにしなる。</dd>
+      <dt>扇（ファン）</dt><dd>扇の形に開く噴水。</dd>
+      <dt>チェイサー</dt><dd>弁でぱっと噴いて止める噴水。順に走らせて追いかけっこに見せる。</dd>
+      <dt>フラワー</dt><dd>花のように開く噴水。</dd>
+      <dt>ガイザー</dt><dd>空気で一気に高く噴き上げる噴水。一番高い（61 m）。</dd>
+      <dt>リング</dt><dd>円に並べた噴水。</dd>
+      <dt>水幕</dt><dd>水の霧の膜に映像を映すもの。横長の1枚（水スクリーン）と、丸い3つの山がある。映像は幕の後ろのプロジェクターが出す。</dd>
+      <dt>号数</dt><dd>花火の玉の大きさ（2.5号〜10号）。大きいほど高く広く開き、保安距離も長い。</dd>
+      <dt>保安距離</dt><dd>花火の筒から客席まで空けないといけない距離。</dd>
+      <dt>リアル／理想</dt><dd>照明の2つの方式。リアル＝機材どおり、理想＝見栄え優先。</dd>
+    </dl>
+  </article>
+  <article class="cmp" id="words-out">
+    <h3>会場と書き出しの言葉</h3>
+    <dl class="gl">
+      <dt>会場・規模</dt><dd>噴水を置く場所。規模は机・庭・広場・湖の4段。</dd>
+      <dt>部品</dt><dd>会場を作る単位（列・帯・弧・円・1台・水幕・花火の台・客席）。</dd>
+      <dt>止める・赤・黄</dt><dd>会場の警告の3段。止める＝作れない、赤＝危ない、黄＝無理がある・見ておく。</dd>
+      <dt>動かないキュー</dt><dd>その会場では狙う台が無くて動かないキュー。本番画面は飛ばして流す。</dd>
+      <dt>自動保存</dt><dd>エディタ・会場の直しを、ブラウザが自動で覚えること。</dd>
+      <dt>縁取り</dt><dd>エディタの 3D で選んだ台を囲む琥珀色の線。</dd>
+      <dt>DMX</dt><dd>照明や機械を動かす決まりごと。512 個の値の束（ユニバース）で送る。</dd>
+      <dt>ユニバース</dt><dd>DMX の値 512 個の束。この会場の 376 台は4ユニバース。</dd>
+      <dt>Art-Net</dt><dd>DMX の値を、ネットワークで送る方法。</dd>
+      <dt>タイムコード</dt><dd>時:分:秒:コマ の時刻。機械どうしで時刻をそろえる。</dd>
+      <dt>コマ（fps）</dt><dd>1秒を何コマに分けるか。このシミュレーターの記録は 40。</dd>
+    </dl>
+    <div class="figs">
+      <figure><img loading="lazy" src="img/25-cue.jpg" alt="時間軸"><figcaption>時間軸の四角（キュー）。「∿」が付いているのはマクロ、「follow」は音楽に合わせるマクロ</figcaption></figure>
+    </div>
+  </article>
+  <p class="src">このマニュアルの直し方：画面が変わったら、その章の文と <code>docs/manual/img/</code> の写真を差し替える（手順は <code>docs/handoff.md</code> の 2026-11-06 追記21）。</p>
+</section>
+
+</main>
+</div>
+<div id="lb"><div class="bar"><span class="cap"></span><button data-a="prev">←</button><button data-a="next">→</button><button data-a="fit">原寸</button><a class="open" target="_blank" rel="noopener">別のタブで開く</a><button data-a="close">閉じる</button></div><div class="stage"><img alt=""></div></div>
+<script>
+(() => {
+  const toc = document.getElementById('toc');
+  const secs = [...document.querySelectorAll('section.theme')];
+  secs.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<a href="#' + s.id + '"><span class="n">' + (i + 1) + '</span><span>' + s.dataset.short + '</span></a>';
+    toc.appendChild(li);
+    s.querySelectorAll('article.cmp[id]').forEach((a) => {
+      const sub = document.createElement('li'); sub.className = 'sub';
+      sub.innerHTML = '<a href="#' + a.id + '">' + a.querySelector('h3').textContent + '</a>';
+      toc.appendChild(sub);
+    });
+  });
+  const links = [...toc.querySelectorAll('a')];
+  const targets = [...secs, ...document.querySelectorAll('article.cmp[id]')];
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return;
+    const id = e.target.id; const sec = e.target.closest('section.theme')?.id;
+    links.forEach((a) => { const h = a.getAttribute('href').slice(1); a.classList.toggle('on', h === id || h === sec); });
+  }), { rootMargin: '-20% 0px -70% 0px' });
+  targets.forEach((s) => io.observe(s));
+  const imgs = [...document.querySelectorAll('main img')];
+  const lb = document.getElementById('lb'), big = lb.querySelector('img'), cap = lb.querySelector('.cap'), open = lb.querySelector('.open');
+  let at = 0;
+  const show = (i) => { at = (i + imgs.length) % imgs.length; const im = imgs[at]; big.src = im.src; cap.textContent = (im.closest('section')?.querySelector('h2')?.textContent || '') + ' — ' + (im.closest('figure')?.querySelector('figcaption')?.textContent || im.alt || ''); open.href = im.src; lb.classList.add('fit'); lb.querySelector('[data-a=fit]').textContent = '原寸'; lb.querySelector('.stage').scrollTop = 0; };
+  imgs.forEach((im, i) => im.addEventListener('click', () => { show(i); lb.classList.add('on'); }));
+  lb.addEventListener('click', (e) => { const a = e.target.closest('[data-a]')?.dataset.a; if (a === 'close' || e.target.classList.contains('stage')) lb.classList.remove('on'); if (a === 'prev') show(at - 1); if (a === 'next') show(at + 1); if (a === 'fit') { lb.classList.toggle('fit'); e.target.textContent = lb.classList.contains('fit') ? '原寸' : '画面に合わせる'; } });
+  addEventListener('keydown', (e) => { if (!lb.classList.contains('on')) return; if (e.key === 'Escape') lb.classList.remove('on'); if (e.key === 'ArrowLeft') show(at - 1); if (e.key === 'ArrowRight') show(at + 1); });
+})();
+</script>
+</body></html>

@@ -1,0 +1,56 @@
+import { open, scenario, openEditor, wait, BASE, ROOT } from './lib.mjs';
+import { readdirSync, readFileSync, unlinkSync, existsSync, statSync } from 'node:fs';
+const S = scenario(12, '広場の床噴水で流して書き出す');
+const { browser, ctx, page, errors } = await open({ w: 1440, h: 900 });
+await openEditor(page, 'fresh', 'lagoon');
+await page.click('#venue-btn'); await page.click('#venue-pop button:has-text("広場の床噴水")'); await wait(1500);
+const lanes = await page.evaluate(() => window.__editor.lanes().map((l) => l.name).join(','));
+const venue1 = await page.evaluate(() => window.__editor.state.file.venue);
+await page.waitForTimeout(1200);
+await page.goto(`${BASE}/edit.html`); await page.waitForFunction(() => window.__editorReady === true, null, { timeout: 90000 });
+await wait(800);
+const after = await page.evaluate(() => ({ venue: window.__editor.state.file.venue, btn: document.getElementById('venue-btn').textContent, lanes: window.__editor.lanes().map((l) => l.name).join(',') }));
+S.rec('12.1', venue1 === 'plaza' && after.venue === 'plaza' && after.lanes === lanes ? 'pass' : 'fail', `会場 ▾ →「広場の床噴水」：レーン ${lanes.slice(0, 140)}。再読み込み後も会場 ${after.venue}（${after.btn}）`, '', [await S.shot(page, '1-editor-plaza')]);
+// player from the editor
+const popP = ctx.waitForEvent('page');
+await page.click('#show-btn');
+const pp = await popP;
+await pp.waitForFunction(() => document.getElementById('go') && !document.getElementById('go').disabled, null, { timeout: 90000 });
+await pp.click('#go'); await wait(4000);
+const pl = await pp.evaluate(() => ({ url: location.search, fixtures: window.__rt.layout.fixtures.length, t: window.__clock.time(), venue: window.__rt.venue?.id ?? window.__rt.venue?.name }));
+await pp.evaluate(() => window.__clock.seek(100)); await wait(1500);
+const pshot = await S.shot(pp, '2-player-plaza');
+await pp.close();
+S.rec('12.2', pl.t > 1 ? 'pass' : 'fail', `「本番で再生 ↗」：${pl.url}、機材 ${pl.fixtures} 台、会場 ${pl.venue}。再生が進んだ（${pl.t.toFixed(1)} 秒）`, '', [pshot]);
+S.rec('12.2-見た目', 'user', '広場の床噴水の水が見えるか（画面 2-player-plaza）', '', [pshot]);
+// export channel CSV 10-20 s, 30 fps
+await page.click('#cx-btn');
+const items = await page.$$eval('#cx-pop button', (bs) => bs.map((b) => b.textContent.trim()));
+await page.click('#cx-pop button:has-text("チャンネル CSV")'); await wait(500);
+await page.check('input[name="cx-range"][value="part"]');
+await page.fill('#cx-from', '10'); await page.fill('#cx-to', '20');
+await page.selectOption('#cx-fps', '30');
+await page.dispatchEvent('#cx-form', 'input'); await wait(300);
+const note = await page.textContent('#cx-note');
+const dir = ROOT + 'exports/control/';
+const beforeFiles = new Set(readdirSync(dir));
+await page.click('#cx-go');
+await page.waitForFunction(() => !document.getElementById('cx-done').hidden || !document.getElementById('cx-error').hidden, null, { timeout: 180000 });
+const state = await page.textContent('#cx-state'); const err = await page.evaluate(() => document.getElementById('cx-error').hidden ? '' : document.getElementById('cx-error').textContent);
+const newFiles = readdirSync(dir).filter((f) => !beforeFiles.has(f));
+let head = '', rows = 0, cols = 0;
+if (newFiles[0]) { const txt = readFileSync(dir + newFiles[0], 'utf8').split('\n'); head = txt[0].slice(0, 160); cols = txt[0].split(',').length; rows = txt.filter(Boolean).length - 1; }
+const m = note.match(/(\d+)\s*台/);
+S.rec('12.3', newFiles.length === 1 && !err ? 'pass' : 'fail', `「書き出し ▾」の項目: ${items.join('・')}。「チャンネル CSV」10〜20 秒・30 fps：説明「${note}」。ファイル ${newFiles.join(',')}（${newFiles[0] ? (statSync(dir + newFiles[0]).size / 1e6).toFixed(1) : 0} MB）、行 ${rows}（期待 300）、列 ${cols}、1行目「${head}…」${err ? '、エラー ' + err : ''}`, '', [await S.shot(page, '3-export-csv')]);
+const plazaFix = await page.evaluate(() => window.__editor.preview.rt.layout.fixtures.length);
+S.rec('12.3-台数', 'info', `広場の機材の数（プレビュー）${plazaFix} 台。CSV の列数 ${cols}（時刻・タイムコード＋機材ごとの列）`);
+for (const f of newFiles) unlinkSync(dir + f);
+S.rec('12.3-後片付け', 'info', `書き出した ${newFiles.join(',')} を消した（exports/control は元の ${[...beforeFiles].length} ファイルに戻した）`);
+await page.click('#cx-cancel').catch(() => {});
+// 4 load lagoon back
+await page.click('#file-btn'); await page.click('#file-pop [data-variant="lagoon"]'); await wait(2500);
+const back = await page.evaluate(() => ({ venue: window.__editor.state.file.venue ?? 'lagoon', btn: document.getElementById('venue-btn').textContent }));
+S.rec('12.4', back.venue === 'lagoon' ? 'pass' : 'fail', `「Night Lagoon (今の演出) を読み込む」で会場が戻る：${back.venue}（${back.btn}）`, '', [await S.shot(page, '4-lagoon-back')]);
+S.rec('12.コンソール', errors.length ? 'fail' : 'pass', errors.length ? errors.slice(0, 3).join(' | ') : 'コンソールのエラー 0');
+S.save();
+await browser.close();

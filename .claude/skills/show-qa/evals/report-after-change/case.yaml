@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: report-after-change
+expected_outcome: |
+  Checks the autosave/loading path first, shoots the relevant times, compares brightness with the preceding wave, and reports conclusion-first in Japanese with what to look at, what was/wasn't verified and how to see it.

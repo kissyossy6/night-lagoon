@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>画面遷移図</title>
+<!--
+  プロジェクトの流れ（docs/projects-plan.md）の画面のつながり。
+  開き方：npm run dev のあと http://localhost:5199/docs/screen-flow.html（ファイルを直接開いてもよい）
+  画面の写真は scripts/flow-shots.mjs で撮り直せる（docs/manual/img/00-*.jpg）
+-->
+<style>
+  :root {
+    --bg: #0f0f10; --panel: #161617; --line: #2e2e31; --line-2: #4c4c50;
+    --text: #d9d9d6; --strong: #f6f6f3; --dim: #8c8c89; --accent: #e8a33d;
+    --face: 'BIZ UDPGothic', 'Hiragino Sans', system-ui, sans-serif;
+    --mono: 'BIZ UDGothic', ui-monospace, Menlo, monospace;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.75 var(--face); -webkit-font-smoothing: antialiased; }
+  main { max-width: 1100px; margin: 0 auto; padding: 48px 16px 96px; }
+  .eyebrow { font-size: 12px; color: var(--accent); letter-spacing: .08em; margin: 0; }
+  h1 { margin: 4px 0 8px; font-size: 32px; line-height: 1.3; color: var(--strong); }
+  p { margin: 0 0 16px; }
+  .lede { color: var(--dim); max-width: 760px; }
+  code { font-family: var(--mono); font-size: .86em; color: var(--strong); background: #1e1e20; padding: 1px 4px; border-radius: 2px; }
+  .legend { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; color: var(--dim); margin: 24px 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { display: inline-block; width: 32px; border-top: 2px solid var(--accent); }
+  .legend i.back { border-top: 2px dashed var(--dim); }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { font-family: var(--face); fill: var(--text); font-size: 13px; }
+  svg .title { fill: var(--strong); font-size: 16px; font-weight: 700; }
+  svg .url { fill: var(--dim); font-family: var(--mono); font-size: 12px; }
+  svg .fwd { fill: var(--accent); font-size: 13px; }
+  svg .bk { fill: var(--dim); font-size: 13px; }
+  svg .small { fill: var(--dim); font-size: 12px; }
+  svg .frame { fill: none; stroke: var(--line-2); stroke-width: 1; }
+  svg .box { fill: var(--panel); stroke: var(--line-2); stroke-width: 1; }
+  svg .go { fill: none; stroke: var(--accent); stroke-width: 2; }
+  svg .ret { fill: none; stroke: var(--dim); stroke-width: 1.5; stroke-dasharray: 6 5; }
+  h2 { margin: 48px 0 16px; font-size: 20px; color: var(--strong); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 16px 8px 0; border-bottom: 1px solid var(--line); }
+  th { color: var(--dim); font-weight: 400; font-size: 13px; }
+  td:first-child { white-space: nowrap; color: var(--strong); }
+  @media (max-width: 640px) { h1 { font-size: 24px; } td:first-child { white-space: normal; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">water-show v2 ・ 2026-11-11</p>
+  <h1>画面遷移図</h1>
+  <p class="lede">スタート → プロジェクト一覧 → エディタ → 本番再生 の順に進みます。本番再生はエディタから別のタブで開き、エディタはそのまま残ります。考え方は <a href="projects-plan.md" style="color:var(--accent)">projects-plan.md</a>、使い方はマニュアルの「プロジェクト」。</p>
+
+  <div class="legend">
+    <span><i></i>進む</span>
+    <span><i class="back"></i>戻る</span>
+  </div>
+
+  <svg viewBox="0 0 1100 1460" role="img" aria-labelledby="flow-title flow-desc">
+    <title id="flow-title">画面遷移図</title>
+    <desc id="flow-desc">スタートからプロジェクト一覧、エディタ、本番再生へ進む流れ。一覧からは新規プロジェクトのダイアログ、エディタからは会場エディタへ分かれる。</desc>
+    <defs>
+      <marker id="a-go" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8a33d" /></marker>
+      <marker id="a-bk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8c8c89" /></marker>
+    </defs>
+
+    <!-- ===================================================== main column -->
+    <!-- ① start -->
+    <text class="title" x="340" y="62">① スタート</text>
+    <text class="url" x="700" y="62" text-anchor="end">/（index.html）</text>
+    <image href="manual/img/00-home.jpg" x="340" y="74" width="360" height="225" preserveAspectRatio="xMidYMid slice" />
+    <rect class="frame" x="340" y="74" width="360" height="225" />
+
+    <!-- ② list -->
+    <text class="title" x="340" y="422">② プロジェクト一覧</text>
+    <text class="url" x="700" y="422" text-anchor="end">/#projects</text>
+    <image href="manual/img/00-list.jpg" x="340" y="434" width="360" height="225" preserveAspectRatio="xMidYMid slice" />
+    <rect class="frame" x="340" y="434" width="360" height="225" />
+
+    <!-- ③ editor -->
+    <text class="title" x="340" y="782">③ エディタ</text>
+    <text class="url" x="700" y="782" text-anchor="end">edit.html?project=id</text>
+    <image href="manual/img/00-editor.jpg" x="340" y="794" width="360" height="225" preserveAspectRatio="xMidYMid slice" />
+    <rect class="frame" x="340" y="794" width="360" height="225" />
+
+    <!-- ④ player -->
+    <text class="title" x="340" y="1142">④ 本番再生（別のタブ）</text>
+    <text class="url" x="700" y="1142" text-anchor="end">play.html?project=id</text>
+    <image href="manual/img/00-play.jpg" x="340" y="1154" width="360" height="225" preserveAspectRatio="xMidYMid slice" />
+    <rect class="frame" x="340" y="1154" width="360" height="225" />
+    <text class="small" x="340" y="1404">「▶ 再生」で始まる（音を鳴らすのに1回のクリックが要る）</text>
+
+    <!-- forward, down the middle -->
+    <path class="go" d="M520,305 L520,398" marker-end="url(#a-go)" />
+    <text class="fwd" x="534" y="356">「プロジェクト一覧」</text>
+    <path class="go" d="M520,665 L520,758" marker-end="url(#a-go)" />
+    <text class="fwd" x="534" y="708">カードを押す</text>
+    <text class="small" x="534" y="728">⋯ →「エディタで開く」でも</text>
+    <path class="go" d="M520,1025 L520,1118" marker-end="url(#a-go)" />
+    <text class="fwd" x="534" y="1068">「▶ 本番で再生」</text>
+    <text class="small" x="534" y="1088">保存してから開く</text>
+
+    <!-- back, on the left -->
+    <path class="ret" d="M340,494 C270,494 270,250 332,250" marker-end="url(#a-bk)" />
+    <text class="bk" x="278" y="376" text-anchor="end">← Night Lagoon</text>
+    <path class="ret" d="M340,854 C270,854 270,610 332,610" marker-end="url(#a-bk)" />
+    <text class="bk" x="278" y="726" text-anchor="end">← 一覧</text>
+    <text class="small" x="278" y="746" text-anchor="end">保存と一覧の絵を</text>
+    <text class="small" x="278" y="764" text-anchor="end">撮ってから戻る</text>
+    <path class="ret" d="M340,1214 C270,1214 270,970 332,970" marker-end="url(#a-bk)" />
+    <text class="bk" x="278" y="1086" text-anchor="end">← エディタに戻る</text>
+    <text class="small" x="278" y="1106" text-anchor="end">元のエディタのタブへ</text>
+
+    <!-- shortcut: last project, far left -->
+    <path class="go" d="M340,130 C40,130 40,900 332,900" marker-end="url(#a-go)" />
+    <text class="fwd" x="112" y="520">前回のつづき</text>
+    <text class="small" x="112" y="540">（前に開いた</text>
+    <text class="small" x="112" y="558">　プロジェクト）</text>
+
+    <!-- ===================================================== right column -->
+    <!-- new project dialog -->
+    <text class="title" x="800" y="422">新規プロジェクト</text>
+    <image href="manual/img/00-new.jpg" x="800" y="434" width="280" height="175" preserveAspectRatio="xMidYMid slice" />
+    <rect class="frame" x="800" y="434" width="280" height="175" />
+    <text class="small" x="800" y="632">名前と、はじめかた（空のショー／見本）</text>
+    <path class="go" d="M700,520 L792,520" marker-end="url(#a-go)" />
+    <text class="fwd" x="746" y="500" text-anchor="middle">＋ 新規</text>
+    <text class="small" x="746" y="544" text-anchor="middle">見本のカード</text>
+    <path class="go" d="M940,642 C940,720 760,740 708,800" marker-end="url(#a-go)" />
+    <text class="fwd" x="952" y="700">作ってエディタで開く</text>
+    <text class="small" x="952" y="720">見本は複製される</text>
+
+    <!-- venue editor -->
+    <text class="title" x="800" y="862">会場エディタ</text>
+    <text class="url" x="1080" y="862" text-anchor="end">venue.html</text>
+    <image href="manual/img/40-venue-lagoon.jpg" x="800" y="874" width="280" height="175" preserveAspectRatio="xMidYMid slice" />
+    <rect class="frame" x="800" y="874" width="280" height="175" />
+    <path class="go" d="M700,920 L792,920" marker-end="url(#a-go)" />
+    <text class="fwd" x="746" y="908" text-anchor="middle">会場 ▾</text>
+    <path class="ret" d="M800,990 L708,990" marker-end="url(#a-bk)" />
+    <text class="bk" x="754" y="1012" text-anchor="middle">← 時間軸</text>
+
+    <!-- other ways into the player -->
+    <rect class="box" x="800" y="1190" width="280" height="150" />
+    <text class="title" x="816" y="1222">ほかの入り方</text>
+    <text x="816" y="1252">一覧の ⋯ →「▶ 本番で再生」</text>
+    <text x="816" y="1278">見本の ⋯ →「▶ 再生だけ見る」</text>
+    <text x="816" y="1304">前の URL <tspan class="url">/?show=…</tspan></text>
+    <text class="small" x="816" y="1326">→ そのまま play.html に回す</text>
+    <path class="go" d="M800,1266 L708,1266" marker-end="url(#a-go)" />
+  </svg>
+
+  <h2>ボタンと行き先</h2>
+  <table>
+    <tr><th>どこで</th><th>押すもの</th><th>行き先</th></tr>
+    <tr><td>スタート</td><td>プロジェクト一覧</td><td>一覧（同じページ。ブラウザの戻るでスタートへ）</td></tr>
+    <tr><td>スタート</td><td>前回のつづき：〇〇</td><td>最後に開いたプロジェクトのエディタ（あるときだけ出る）</td></tr>
+    <tr><td>一覧</td><td>自分のカード／⋯ →「エディタで開く」</td><td>エディタ</td></tr>
+    <tr><td>一覧</td><td>＋ 新規プロジェクト・見本のカード</td><td>新規プロジェクト → 「作ってエディタで開く」でエディタ</td></tr>
+    <tr><td>一覧</td><td>⋯ → 名前を変える・複製・JSON を書き出す・見本にする・Finder で表示・削除</td><td>一覧のまま</td></tr>
+    <tr><td>エディタ</td><td>▶ 本番で再生</td><td>本番再生（別のタブ。保存してから開く。2回目からは同じタブを使い回す）</td></tr>
+    <tr><td>エディタ</td><td>← 一覧</td><td>一覧（保存と一覧の絵を撮ってから）</td></tr>
+    <tr><td>エディタ</td><td>ファイル ▾ → 複製して別のプロジェクトにする</td><td>コピーのエディタ</td></tr>
+    <tr><td>エディタ</td><td>会場 ▾ → この会場を編集 ↗</td><td>会場エディタ（「← 時間軸」で戻る）</td></tr>
+    <tr><td>本番再生</td><td>← エディタに戻る</td><td>開いた元のエディタのタブ（見本や URL から開いたときは「← プロジェクト一覧」）</td></tr>
+  </table>
+
+  <h2>例外</h2>
+  <table>
+    <tr><th>場合</th><th>どうなるか</th></tr>
+    <tr><td><code>edit.html</code>（project なし）</td><td>確認用のエディタ。どのプロジェクトにも保存しない（前の1枠の自動保存を使う。確かめの scripts 用）。ファイル ▾ →「プロジェクトとして保存」で一覧に入れられる</td></tr>
+    <tr><td>見本の id でエディタ</td><td>一覧へ戻す（見本は複製してから編集する）</td></tr>
+    <tr><td>無い id</td><td>知らせて一覧へ戻す</td></tr>
+    <tr><td>同じプロジェクトを2つのエディタで</td><td>両方に知らせが出る（後から保存したほうが残るため）</td></tr>
+    <tr><td>開発サーバーなし</td><td>同じ流れで、保存先がこのブラウザの中になる（一覧の上に表示）</td></tr>
+  </table>
+</main>
+</body>
+</html>

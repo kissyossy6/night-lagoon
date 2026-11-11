@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <title>Projection check</title>
+    <style>
+      body { background: #111; color: #ccc; font: 12px monospace; margin: 0; padding: 8px; }
+      img, canvas { display: block; max-width: 100%; }
+    </style>
+  </head>
+  <body>
+    <pre id="log">rendering...</pre>
+    <div id="out"></div>
+    <script type="module">
+      // Renders projection frames at a list of times, builds a contact sheet at the
+      // screen's true 7.7:1 aspect, measures render cost and checks determinism.
+      // ?times=4,12,... &w=2048&h=384 &n=200
+      import { ProjectionContent, SCREEN_ASPECT } from '/src/screen/projection.ts';
+
+      const q = new URLSearchParams(location.search);
+      const times = (q.get('times') ?? '4,12,24,40,56,70,86,96,106,118,126,136,150,165,176').split(',').map(Number);
+      const W = Number(q.get('w') ?? 2048);
+      const H = Number(q.get('h') ?? 384);
+      const N = Number(q.get('n') ?? 200);
+      const p = new ProjectionContent(W, H);
+
+      // frames: raw canvas and a version stretched to the screen aspect
+      const fw = 1400, fh = Math.round(fw / SCREEN_ASPECT);
+      const frames = [];
+      for (const t of times) {
+        p.render(t);
+        const avg = p.averageColor();
+        // reference mean over the full canvas (check only)
+        const d = p.canvas.getContext('2d').getImageData(0, 0, W, H).data;
+        const lin = (v) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+        let r = 0, g = 0, b = 0;
+        for (let i = 0; i < d.length; i += 16) { r += lin(d[i]); g += lin(d[i + 1]); b += lin(d[i + 2]); }
+        const n = d.length / 16;
+        const s = document.createElement('canvas');
+        s.width = fw; s.height = fh;
+        s.getContext('2d').drawImage(p.canvas, 0, 0, fw, fh);
+        frames.push({ t, level: p.level(t), avg, refAvg: [r / n, g / n, b / n], raw: p.canvas.toDataURL('image/png'), screen: s.toDataURL('image/png') });
+      }
+
+      // contact sheet: 2 columns of screen-aspect frames with labels
+      const cw = 1000, ch = Math.round(cw / SCREEN_ASPECT), pad = 8, lab = 18;
+      const cols = 2, rows = Math.ceil(times.length / cols);
+      const sheet = document.createElement('canvas');
+      sheet.width = cols * (cw + pad) + pad;
+      sheet.height = rows * (ch + lab + pad) + pad;
+      const sg = sheet.getContext('2d');
+      sg.fillStyle = '#222'; sg.fillRect(0, 0, sheet.width, sheet.height);
+      sg.font = '13px monospace';
+      times.forEach((t, i) => {
+        p.render(t);
+        const x = pad + (i % cols) * (cw + pad);
+        const y = pad + Math.floor(i / cols) * (ch + lab + pad);
+        sg.drawImage(p.canvas, x, y + lab, cw, ch);
+        const a = p.averageColor();
+        sg.fillStyle = `rgb(${a.map((v) => Math.round(255 * v ** (1 / 2.2))).join(',')})`;
+        sg.fillRect(x + cw - 40, y + 2, 40, 14);
+        sg.fillStyle = '#ddd';
+        sg.fillText(`t=${t}s  level=${p.level(t).toFixed(2)}  avg=${a.map((v) => v.toFixed(3)).join(' ')}`, x, y + 13);
+      });
+
+      // determinism: same t gives the same image regardless of history
+      const sig = () => { const c = document.createElement('canvas'); c.width = 64; c.height = 12; const x = c.getContext('2d'); x.drawImage(p.canvas, 0, 0, 64, 12); return Array.from(x.getImageData(0, 0, 64, 12).data).join(','); };
+      p.render(97.3); const s1 = sig(); p.render(150); p.render(20); p.render(97.3); const s2 = sig();
+
+      // Timing on a fresh instance (no full-canvas readbacks, which can demote a
+      // canvas to CPU raster).
+      //  cpuMs:     main-thread cost of render(t) alone (Chrome records the draw
+      //             ops; the GPU process rasterises them later)
+      //  withAvgMs: render(t) + averageColor(); the readback waits for the GPU
+      //             to finish rasterising the frame, so this is the worst case
+      //  readbackLatencyMs: averageColor on a near-empty frame (pure sync cost)
+      const q2 = new ProjectionContent(W, H);
+      for (let i = 0; i < 40; i++) { q2.render(i * 4.4); q2.averageColor(); }
+      const ts = Array.from({ length: N }, (_, i) => (i + 0.5) * (180 / N));
+      let t0 = performance.now();
+      for (const t of ts) q2.render(t);
+      const cpuMs = (performance.now() - t0) / N;
+      q2.averageColor();
+      t0 = performance.now();
+      for (const t of ts) { q2.render(t); q2.averageColor(); }
+      const withAvgMs = (performance.now() - t0) / N;
+      t0 = performance.now();
+      for (let i = 0; i < 100; i++) { q2.render(0.01 + i * 1e-4); q2.averageColor(); }
+      const readbackLatencyMs = (performance.now() - t0) / 100;
+      const secs = { intro: [0, 16], awakening: [16, 48], theme: [48, 80], story: [80, 112], build: [112, 128], finale: [128, 160], coda: [160, 180] };
+      const perSection = {};
+      for (const [k, [a, b]] of Object.entries(secs)) {
+        const tt = Array.from({ length: 60 }, (_, i) => a + (b - a) * (i + 0.5) / 60);
+        let t1 = performance.now();
+        for (const t of tt) q2.render(t);
+        const cpu = (performance.now() - t1) / tt.length;
+        q2.averageColor();
+        t1 = performance.now();
+        for (const t of tt) { q2.render(t); q2.averageColor(); }
+        perSection[k] = { cpuMs: +cpu.toFixed(3), withAvgMs: +((performance.now() - t1) / tt.length).toFixed(3) };
+      }
+
+      const result = {
+        size: [W, H],
+        frames,
+        sheet: sheet.toDataURL('image/png'),
+        deterministic: s1 === s2,
+        timing: { calls: N, cpuMs, withAvgMs, readbackLatencyMs, perSection },
+      };
+      window.__projection = result;
+      window.__ready = true;
+      document.getElementById('log').textContent = JSON.stringify({ ...result, frames: frames.map((f) => ({ t: f.t, level: f.level, avg: f.avg, refAvg: f.refAvg })), sheet: undefined }, null, 1);
+      const img = new Image(); img.src = result.sheet; document.getElementById('out').appendChild(img);
+    </script>
+  </body>
+</html>

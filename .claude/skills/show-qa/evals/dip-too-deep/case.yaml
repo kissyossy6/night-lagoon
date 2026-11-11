@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: dip-too-deep
+expected_outcome: |
+  Pushes back gently with the user's own past preference (dips to 0 mid-show felt unreal; 30% too deep → 65%), offers a now|proposal comparison of a deep-but-not-zero dip vs 0, and asks before changing approved Night Lagoon content.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: plaza-casting-plan
+expected_outcome: |
+  Runs reach.mjs for the plaza, reports cues that do nothing per section and why, keeps times/colours/darks, proposes a role-to-fixture casting table using @names, handles missing fan/flower/chaser/screen/pyro, keeps the reward ladder climbing, notes small-venue numbers are provisional.

@@ -1,0 +1,14 @@
+{
+  "id": "garden",
+  "name": "庭の池",
+  "scale": "garden",
+  "note": "直径 3 m の丸い池。真ん中の1本と、それを囲む8本の円、首を振らない小さい扇4つ。花火と水幕は無い。グループの名前はラグーンにそろえた。水の動きと見え方は 100 m 級のままで、実物とは合わせていない（dev-plan B7）",
+  "water": { "kind": "circle", "radius": 1.5 },
+  "wind": [0.5, 0, 0],
+  "parts": [
+    { "kind": "single", "name": "真ん中", "group": "geyser", "fixture": "garden-jet", "at": [0, 0], "note": "ガイザーの役：真ん中の1本" },
+    { "kind": "ring", "name": "まわりの円", "group": "grid", "fixture": "garden-jet", "count": 8, "center": [0, 0], "radius": 0.5, "a0": 22.5, "note": "縁まで 1 m なので、高さ 1 m まで" },
+    { "kind": "ring", "name": "扇", "group": "fan", "fixture": "garden-fan", "count": 4, "center": [0, 0], "radius": 0.4, "a0": 0, "note": "扇は水が ±45° に開くので、着水は 1 m 先まで" },
+    { "kind": "seats", "name": "池の前", "from": [-2, 2.5], "to": [2, 2.5], "note": "池の縁から 1 m 離れて立つ" }
+  ]
+}

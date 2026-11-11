@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: add-pyro-to-new-version
+expected_outcome: |
+  A plan table (time, music, tubes, shell/size, pattern, colour, aim) for fireworks in a NEW version based on fantasia, without touching the fantasia or Night Lagoon content; sizes climb; rests kept; safety rules respected.

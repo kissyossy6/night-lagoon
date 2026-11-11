@@ -1,0 +1,12 @@
+{
+ "format": 1,
+ "id": "sample-fantasia",
+ "name": "Night Lagoon — ファンタジア版",
+ "created": "2026-11-11T00:00:00.000Z",
+ "updated": "2026-11-11T00:00:00.000Z",
+ "sample": true,
+ "order": 2,
+ "description": "水幕の映像で始まり、1:06 で色が変わる版",
+ "generate": "fantasia",
+ "show": null
+}

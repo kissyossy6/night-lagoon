@@ -1,0 +1,127 @@
+/* The venue editor (venue.html). Shares the editor's top strip, buttons,
+   menus, fields and toast (src/editor/editor.css); every value is a token. */
+
+.btn.primary { background: var(--c-primary-bg); border-color: var(--c-primary-line); color: var(--c-primary-text); }
+.btn.primary:hover { background: var(--c-primary-bg-hover); border-color: var(--c-primary-line-hover); }
+.vn-title { color: var(--c-text); }
+.vn-tag { font-size: var(--fs-2xs); padding: 1px 6px; border: 1px solid var(--c-line-2); border-radius: var(--radius); color: var(--c-text-dim); }
+.vn-tag:empty { display: none; }
+.menu-pop.up { top: auto; bottom: 32px; }
+
+#vapp {
+  position: absolute;
+  top: 40px;
+  bottom: 28px;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: 256px 1fr 312px;
+}
+#vapp aside { background: var(--c-panel); overflow-y: auto; min-height: 0; }
+.vn-left { border-right: 1px solid var(--c-line); display: flex; flex-direction: column; }
+.vn-right { border-left: 1px solid var(--c-line); }
+#vapp section { padding: 12px 16px 16px; border-bottom: 1px solid var(--c-line); }
+#vapp section[hidden] { display: none; }
+#vapp h2 {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  margin: 0 0 8px;
+  color: var(--c-text-strong);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+#vapp h2 small { font-weight: var(--fw-normal); color: var(--c-text-dim); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#vapp .row { grid-template-columns: 64px 1fr; }
+#vapp .row .pair > input { min-width: 0; }
+#vapp input.txt, #vapp input.num, #vapp select.inp { width: 100%; min-width: 0; }
+#vapp .seg { width: fit-content; }
+#vapp .seg button { padding: 4px 9px; }
+.unit { color: var(--c-text-faint); font-size: var(--fs-xs); white-space: nowrap; }
+.vn-note { font-size: var(--fs-xs); color: var(--c-text-dim); line-height: 1.6; margin: 8px 0 0; }
+.vn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.vn-acts .btn { padding: 0 8px; }
+
+.vn-parts { flex: 1; display: flex; flex-direction: column; min-height: 0; border-bottom: 0 !important; }
+.vn-list { margin: 0 0 10px; padding: 0; list-style: none; flex: 1; overflow-y: auto; }
+.vn-list li {
+  display: grid;
+  grid-template-columns: 10px 52px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.vn-list li:hover { background: var(--c-btn-hover); }
+.vn-list li .sw { width: 8px; height: 8px; border-radius: 50%; }
+.vn-list li .k { color: var(--c-text-dim); }
+.vn-list li .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vn-list li .n { color: var(--c-text-faint); font-variant-numeric: tabular-nums; }
+.vn-list li.on { background: var(--c-primary-bg); outline: 1px solid var(--c-primary-line); }
+.vn-list li.grp { grid-template-columns: 1fr auto; color: var(--c-text-dim); font-size: var(--fs-xs); height: 22px; margin-top: 4px; cursor: default; }
+.vn-list li.grp:hover { background: none; }
+.vn-list li .mk { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 4px; }
+
+#vn-stage { position: relative; overflow: hidden; min-width: 0; }
+#vn-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.vn-tools { position: absolute; left: 12px; top: 12px; display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.vn-tools .seg { flex: none; }
+.vn-tools select.inp { width: auto; height: var(--ctl-h); }
+.vn-snap, .vn-hint { color: var(--c-text-faint); font-size: var(--fs-xs); }
+.vn-hint { position: absolute; left: 12px; bottom: 10px; right: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vn-zoom { position: absolute; right: 12px; top: 12px; display: flex; gap: 4px; }
+
+.vn-warn { display: grid; grid-template-columns: 14px 1fr; gap: 8px; padding: 6px 0; font-size: var(--fs-sm); border-top: 1px solid var(--c-line); cursor: default; }
+.vn-warn.go { cursor: pointer; }
+.vn-warn:first-of-type { border-top: 0; }
+.vn-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 3px; }
+.vn-dot.stop { background: var(--c-vn-stop); border-radius: 1px; }
+.vn-dot.danger { background: var(--c-vn-danger); }
+.vn-dot.note { background: var(--c-vn-note); }
+.vn-none { font-size: var(--fs-sm); color: var(--c-text-dim); }
+.vn-skips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.vn-skips .btn { height: 22px; padding: 0 6px; font-size: var(--fs-xs); }
+
+#vn-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 12px;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-panel);
+  font-size: var(--fs-xs);
+  color: var(--c-text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+#vn-foot b { color: var(--c-text); font-weight: var(--fw-normal); }
+#vn-foot .spacer { flex: 1; }
+.vn-rule { font-weight: var(--fw-bold); margin-right: 6px; color: var(--c-text-strong); }
+.vn-stop { font-size: var(--fs-sm); color: var(--c-danger-text); margin: 0 0 6px; }
+
+/* 動かないキュー (B4): the footer's count and its breakdown */
+.vn-cues-btn { height: 20px; padding: 0 8px; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.vn-cues-btn b { color: var(--c-text); font-weight: var(--fw-normal); }
+.vn-cues-btn b.bad, .vn-cues-row .bad { color: var(--c-vn-danger); }
+.vn-cues .menu-pop.vn-cues-pop { left: auto; right: 0; bottom: 26px; width: 440px; padding: 10px 12px; font-size: var(--fs-sm); line-height: 1.7; white-space: normal; color: var(--c-text); }
+.vn-cues-head { font-weight: var(--fw-bold); color: var(--c-text-strong); margin-bottom: 4px; }
+.vn-cues-row { display: grid; grid-template-columns: 1fr 64px 64px 48px; }
+.vn-cues-row > span:not(:first-child) { text-align: right; }
+.vn-cues-row.th { color: var(--c-text-faint); font-size: var(--fs-xs); }
+.vn-cues-sub { margin-top: 8px; color: var(--c-text-faint); font-size: var(--fs-xs); }
+.vn-cues-why { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; }
+.vn-cues-why code { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--c-text); }
+.vn-cues-why .n { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* the projector's screens (当てる水幕) */
+.vn-chks { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.vn-chk { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }

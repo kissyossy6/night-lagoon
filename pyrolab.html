@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>花火の比べ場</title>
+    <!-- 参考の花火ページとの比べ（docs/reports/hanabi-reference.html）の7つの案を、
+         左＝今のまま、右＝ボタンで変えたもの の2画面で見比べる場。本番の見た目は変えない。 -->
+    <link rel="stylesheet" href="/src/styles/tokens.css" />
+    <style>
+      :root {
+        --p-bg: var(--gray-2, #131314);
+        --p-line: var(--gray-6, #272729);
+        --p-line-2: var(--gray-7, #2e2e31);
+        --p-text: var(--gray-13, #d9d9d6);
+        --p-strong: var(--gray-15, #f6f6f3);
+        --p-dim: var(--gray-11, #8c8c89);
+        --p-accent: var(--accent, #e8a33d);
+        --p-btn: var(--gray-5, #1e1e20);
+        color-scheme: dark;
+      }
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: var(--p-text);
+        font: 13px/1.5 var(--face-text, 'BIZ UDPGothic', 'Hiragino Sans', system-ui, sans-serif); }
+      button, select { font: inherit; color: var(--p-text); background: var(--p-btn); border: 1px solid var(--p-line-2);
+        border-radius: 2px; height: 28px; padding: 0 10px; cursor: pointer; }
+      button:hover, select:hover { border-color: var(--p-accent); }
+      button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--p-accent); outline-offset: 1px; }
+      a { color: var(--accent-light, #f2c27a); }
+
+      #top { position: fixed; top: 0; left: 0; right: 0; background: var(--p-bg); border-bottom: 1px solid var(--p-line);
+        padding: 8px 14px; display: flex; flex-direction: column; gap: 6px; z-index: 2; }
+      #how { color: var(--p-dim); font-size: 12px; margin: 0; }
+      #how b { color: var(--p-strong); font-weight: 400; }
+      .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .row label { color: var(--p-dim); font-size: 12px; }
+      #seek { flex: 1 1 200px; min-width: 140px; accent-color: var(--p-accent); }
+      #clock { font-family: var(--face-mono, 'BIZ UDGothic', ui-monospace, monospace); font-size: 12px; color: var(--p-strong); min-width: 11em; }
+      #play.on { border-color: var(--p-accent); color: var(--p-strong); }
+      .sep { width: 1px; height: 20px; background: var(--p-line-2); }
+
+      /* the ideas: one row of switches */
+      #list { display: flex; flex-wrap: wrap; gap: 6px; }
+      .idea { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; }
+      .idea .n { font-family: var(--face-mono, ui-monospace, monospace); color: var(--p-dim); }
+      .idea.on { border-color: var(--p-accent); background: #2a2114; color: var(--p-strong); }
+      .idea.on .n { color: var(--p-accent); }
+      #every.on, #none.on, #show.on { border-color: var(--p-accent); }
+      .idea .v { color: var(--p-accent); }
+
+      /* the two views */
+      #views { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--p-line); }
+      #views.single { grid-template-columns: 1fr; }
+      #views.single #viewA { display: none; }
+      .view { position: relative; overflow: hidden; background: #000; }
+      .view canvas { display: block; width: 100% !important; height: 100% !important; }
+      .tag { position: absolute; top: 8px; left: 10px; z-index: 1; font-size: 13px; padding: 2px 9px; border-radius: 2px;
+        background: rgba(15, 15, 16, 0.78); border: 1px solid var(--p-line-2); color: var(--p-text); pointer-events: none; }
+      #viewB .tag { border-color: var(--p-accent); color: var(--p-strong); }
+      #viewB .tag b { color: var(--p-accent); font-weight: 400; }
+      #stat { position: fixed; right: 12px; bottom: 10px; font-size: 12px; color: var(--p-dim); background: rgba(15, 15, 16, 0.78);
+        padding: 3px 8px; border-radius: 2px; z-index: 2; font-family: var(--face-mono, ui-monospace, monospace); }
+      body.shot #top, body.shot #stat { display: none; }
+      body.shot #views { top: 0 !important; }
+      @media (max-width: 760px) { #how { display: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="top">
+      <p id="how"><b>使い方</b>：<b>左＝本番（①②1割④⑤⑥⑦が入った今の見え方）、右＝ボタンで変えたもの</b>（初めは本番と同じ）。下のボタンで右の案を1つずつ点ける・消す（キー 1〜7、②は 1割→強い→なし）。▶ で再生（スペース）。止めてつまみで好きな瞬間（← → で 1/30 秒ずつ）。左右はいつも同じ時刻。</p>
+      <div class="row">
+        <label for="scene">花火</label>
+        <select id="scene"></select>
+        <label for="cam">見る位置</label>
+        <select id="cam">
+          <option value="sky">花火と水（花火版の席）</option>
+          <option value="near">花火に寄る</option>
+        </select>
+        <label for="layout">画面</label>
+        <select id="layout">
+          <option value="split">2画面（左 本番・右 変えた）</option>
+          <option value="single">1画面（変えた方だけ）</option>
+        </select>
+        <span class="sep"></span>
+        <a id="ref" href="/docs/reference/hanabi-photoreal-simple.html" target="hanabi-ref" rel="noopener">参考ページを開く</a>
+        <button id="side" type="button" title="参考ページを右半分の別の窓で開く">横に並べる</button>
+        <a href="/docs/reports/hanabi-reference.html" target="_blank" rel="noopener">レポート</a>
+      </div>
+      <div class="row">
+        <button id="play" type="button">▶ 再生</button>
+        <button id="restart" type="button">⏮ 最初から</button>
+        <button id="back" type="button" title="1/30 秒もどす">◀</button>
+        <button id="fwd" type="button" title="1/30 秒すすめる">▶︎</button>
+        <input id="seek" type="range" min="0" max="1" step="0.001" value="0" aria-label="時刻" />
+        <span id="clock">—</span>
+        <label for="speed">速さ</label>
+        <select id="speed">
+          <option value="1">1倍</option>
+          <option value="0.5">1/2</option>
+          <option value="0.25">1/4</option>
+        </select>
+        <label><input id="loop" type="checkbox" checked /> くり返す</label>
+      </div>
+      <div class="row">
+        <label>右の案</label>
+        <div id="list"></div>
+        <span class="sep"></span>
+        <button id="show" type="button">本番と同じ</button>
+        <button id="none" type="button">前の見え方（今日より前）</button>
+        <button id="every" type="button">全部入れる（芯・強い光も）</button>
+      </div>
+    </div>
+    <div id="views">
+      <div class="view" id="viewA"><span class="tag">本番</span></div>
+      <div class="view" id="viewB"><span class="tag" id="tagB">変えた</span></div>
+    </div>
+    <div id="stat"></div>
+    <script type="module" src="/src/lab/pyrolab.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: prove-no-change
+expected_outcome: |
+  Snapshots code, serves it on 5299, captures both versions at the 11 standard times from 5299 and 5199, runs sheet.py diff and reports 0 px for all, then stops the 5299 server.

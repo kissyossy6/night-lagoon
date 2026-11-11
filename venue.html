@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Water Show Venue</title>
+    <!-- in the head, so the first paint already has the look (not added later by the script) -->
+    <link rel="stylesheet" href="/src/editor/editor.css" />
+    <link rel="stylesheet" href="/src/venues/editor/venue.css" />
+  </head>
+  <body>
+    <header id="bar">
+      <div class="brand">水上ショー <b>会場</b></div>
+      <div class="menu" id="venue-menu">
+        <button class="btn" id="venue-btn" aria-haspopup="true">会場 ▾</button>
+        <div class="menu-pop" id="venue-pop" hidden></div>
+        <input type="file" id="import-input" accept=".json,application/json" hidden />
+      </div>
+      <div class="group">
+        <button class="btn icon" id="undo-btn" title="元に戻す (⌘/Ctrl+Z)">↶</button>
+        <button class="btn icon" id="redo-btn" title="やり直す (⇧⌘/Ctrl+Z)">↷</button>
+      </div>
+      <div class="sep"></div>
+      <span class="vn-title" id="venue-title"></span>
+      <span class="vn-tag" id="venue-tag"></span>
+      <div class="spacer"></div>
+      <span class="status" id="save-status"></span>
+      <button class="btn" id="back-btn" title="時間軸（edit.html）へ">← 時間軸</button>
+      <button class="btn primary" id="view3d-btn" title="この会場で本番画面を開く（エディタの演出があればそれを、なければ Night Lagoon）">3Dで見る</button>
+    </header>
+    <main id="vapp">
+      <aside class="vn-left">
+        <section id="venue-fields"></section>
+        <section class="vn-parts">
+          <h2>部品 <small id="parts-count"></small></h2>
+          <ul class="vn-list" id="parts-list"></ul>
+          <div class="menu vn-add" id="add-menu">
+            <button class="btn" id="add-btn" aria-haspopup="true">＋ 部品を足す ▾</button>
+            <div class="menu-pop up" id="add-pop" hidden></div>
+          </div>
+        </section>
+      </aside>
+      <div id="vn-stage">
+        <canvas id="vn-canvas"></canvas>
+        <div class="vn-tools">
+          <div class="seg" id="tool-seg">
+            <button data-tool="select" class="on">選ぶ・動かす</button>
+            <button data-tool="place">1台を置く</button>
+          </div>
+          <select class="inp" id="place-kind" title="1台を置く・部品を足すときの機材（選んだ部品の機材になる）"></select>
+          <span class="vn-snap" id="snap-hint"></span>
+        </div>
+        <div class="vn-zoom">
+          <button class="btn icon" id="zoom-out" title="縮小">−</button>
+          <button class="btn" id="zoom-fit" title="会場全体（花火の台も）">全体</button>
+          <button class="btn icon" id="zoom-in" title="拡大">＋</button>
+        </div>
+        <div class="vn-hint" id="vn-hint"></div>
+      </div>
+      <aside class="vn-right">
+        <section id="part-fields"></section>
+        <section id="fixture-fields" hidden></section>
+        <section id="warn-list"></section>
+      </aside>
+    </main>
+    <footer id="vn-foot"></footer>
+    <div id="toast" hidden></div>
+    <script type="module" src="/src/venues/editor/main.ts"></script>
+  </body>
+</html>

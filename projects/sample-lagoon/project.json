@@ -1,0 +1,12 @@
+{
+ "format": 1,
+ "id": "sample-lagoon",
+ "name": "Night Lagoon",
+ "created": "2026-11-11T00:00:00.000Z",
+ "updated": "2026-11-11T00:00:00.000Z",
+ "sample": true,
+ "order": 1,
+ "description": "夜の湖の噴水ショー。水と光だけで約3分半",
+ "generate": "lagoon",
+ "show": null
+}

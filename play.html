@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Night Lagoon</title>
+    <link rel="stylesheet" href="/src/styles/player.css" />
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="start">
+      <div class="box">
+        <p class="kicker" id="start-kind">本番再生</p>
+        <h1>Night Lagoon</h1>
+        <p id="start-desc"></p>
+        <div><button id="go" disabled>準備中…</button></div>
+        <p id="start-status">音楽を読み込んでいます</p>
+        <p class="links"><a id="start-back" href="/#projects">← プロジェクト一覧</a><span class="dot">·</span><label class="pick">音楽ファイルを選ぶ <input id="music-file" type="file" accept="audio/*" /></label></p>
+      </div>
+    </div>
+    <div id="bar">
+      <canvas id="scope" hidden aria-label="波形と水・光のタイムライン（ドラッグで移動、ホイールで拡大縮小）"></canvas>
+      <div id="seek-wrap"><canvas id="overview"></canvas><input id="seek" type="range" min="0" max="180" step="0.01" value="0" aria-label="再生位置" /></div>
+      <div id="row">
+        <button id="play" aria-label="再生">▶</button>
+        <span id="time">0:00 / 3:00</span>
+        <span id="now-sec"></span>
+        <span class="spacer"></span>
+        <span id="status"></span>
+        <button id="wave" class="tog" aria-pressed="false" title="波形を見る（Wキー）">波形</button>
+        <button id="splash" class="tog" aria-pressed="true" title="水しぶきの音（Sキー）">水音</button>
+        <div class="menu">
+          <button class="dd" id="vol-open" aria-haspopup="true" aria-expanded="false">音量</button>
+          <div class="pop" id="vol" hidden>
+            <h4>音量（100% が基準のバランス。書き出しにも効く）</h4>
+            <div id="vol-rows"></div>
+            <button id="vol-reset" class="vol-reset">元に戻す</button>
+          </div>
+        </div>
+        <span class="sep"></span>
+        <div class="menu">
+          <button class="dd" id="cam-open" aria-haspopup="true" aria-expanded="false">カメラ <b id="cam-now"></b></button>
+          <div class="pop" id="cam" hidden></div>
+        </div>
+        <div class="menu">
+          <button class="dd" id="view-open" aria-haspopup="true" aria-expanded="false">表示 <b id="view-now"></b></button>
+          <div class="pop" id="view" hidden>
+            <h4>照明（Lキー）</h4>
+            <span class="seg" id="light">
+              <button data-v="real" aria-pressed="true">リアル</button>
+              <button data-v="ideal" aria-pressed="false">理想</button>
+            </span>
+            <h4>画質</h4>
+            <span class="seg" id="quality">
+              <button data-v="auto">自動</button>
+              <button data-v="high">高</button>
+              <button data-v="medium">中</button>
+              <button data-v="low">低</button>
+            </span>
+          </div>
+        </div>
+        <span class="sep"></span>
+        <button id="export-open">動画を書き出す</button>
+        <a id="edit-link" href="/#projects">← プロジェクト一覧</a>
+      </div>
+    </div>
+    <div id="export" hidden>
+      <form class="box" id="export-form">
+        <h2>動画を書き出す</h2>
+        <div id="export-settings">
+          <fieldset>
+            <legend>形式</legend>
+            <label><input type="radio" name="format" value="flat" checked /> ふつうの動画（MP4）</label>
+            <label><input type="radio" name="format" value="vr180" /> Vision Pro（180° 立体）</label>
+            <p class="hint">目の前に半球で広がる立体映像。1か所に座って見る形で、カメラは動きません</p>
+          </fieldset>
+          <fieldset>
+            <legend>カメラ</legend>
+            <label><input type="radio" name="camera" value="fixed" checked /> 1か所から撮る
+              <select id="export-angle" aria-label="撮る場所"></select></label>
+            <label class="flat-only"><input type="radio" name="camera" value="auto" /> おまかせ（いろいろな角度で自動）</label>
+            <p class="hint flat-only">音楽の盛り上がりに合わせてカットを切り替え、カメラを動かします。物語の場面は水幕を正面から撮ります</p>
+          </fieldset>
+          <fieldset>
+            <legend>範囲</legend>
+            <label><input type="radio" name="range" value="all" checked /> 全編（<span id="export-all">3:37</span>）</label>
+            <div class="inline">
+              <label><input type="radio" name="range" value="part" /> 指定</label>
+              <input id="export-from" type="number" min="0" max="217" step="0.5" value="0" aria-label="開始（秒）" />秒から
+              <input id="export-to" type="number" min="0" max="217" step="0.5" value="30" aria-label="終了（秒）" />秒まで
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>画質</legend>
+            <div class="inline">
+              <select id="export-eye" class="vr-only" aria-label="片目の解像度">
+                <option value="4096" selected>片目 4096（Apple の再生保証の範囲）</option>
+                <option value="7680">片目 7680（いちばん細かい・実機の再生は未確認）</option>
+              </select>
+              <select id="export-size" class="flat-only" aria-label="解像度">
+                <option value="1280x720">1280×720（HD）</option>
+                <option value="1920x1080" selected>1920×1080（フルHD）</option>
+                <option value="2560x1440">2560×1440</option>
+                <option value="3840x2160">3840×2160（4K）</option>
+              </select>
+              <select id="export-fps" aria-label="フレームレート">
+                <option value="30" selected>30 fps</option>
+                <option value="60">60 fps</option>
+              </select>
+            </div>
+          </fieldset>
+          <p class="note" id="export-note"></p>
+        </div>
+        <div id="export-run" hidden>
+          <progress id="export-progress" max="1" value="0"></progress>
+          <p class="note" id="export-state"></p>
+          <div id="export-done" hidden><button type="button" id="export-reveal">Finder で表示</button></div>
+        </div>
+        <p class="error" id="export-error" hidden></p>
+        <div class="actions">
+          <button type="button" id="export-cancel">閉じる</button>
+          <button type="submit" class="primary" id="export-go">書き出す</button>
+        </div>
+      </form>
+    </div>
+    <script type="module" src="/src/show/main.ts"></script>
+  </body>
+</html>

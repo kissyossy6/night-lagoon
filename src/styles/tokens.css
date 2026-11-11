@@ -1,0 +1,228 @@
+/*
+ * Every value the editor and the player draw with. CSS reads these with
+ * var(); the canvases (editor timeline, player scope) read them through
+ * src/ui/theme.ts.
+ *
+ * Two layers:
+ *   1. the base values (palette, typefaces, type scale, weights) — change the
+ *      look here, in one place;
+ *   2. the named uses (--c-*, --font-*, …), which only point at the base.
+ *      Code reads layer 2, so a use can be re-pointed without touching code.
+ *
+ * Stage 1.5 look (2026-11-03), after lighting desks and DAWs (grandMA3
+ * timecode viewer, Ableton arrangement, Resolve): neutral graphite with no
+ * blue cast, one amber accent for selection / focus / playing, 1px lines
+ * instead of shadows and gradients, one small corner radius, BIZ UD Gothic.
+ * Colour inside the timeline belongs to the content (venue row colours,
+ * sections, cues); the chrome around it stays grey.
+ */
+@import './fonts.css';
+
+:root {
+  /* ================================================== 1. base values */
+
+  /* greys, dark to light (surfaces 0–9, ink 10–15) */
+  --gray-0: #0c0c0d;
+  --gray-1: #0f0f10;
+  --gray-2: #131314;
+  --gray-3: #161617;
+  --gray-4: #19191b;
+  --gray-5: #1e1e20;
+  --gray-6: #272729;
+  --gray-7: #2e2e31;
+  --gray-8: #3a3a3e;
+  --gray-9: #4c4c50;
+  --gray-10: #5c5c5a;
+  --gray-11: #8c8c89;
+  --gray-12: #cbcbc8;
+  --gray-13: #d9d9d6;
+  --gray-14: #ececea;
+  --gray-15: #f6f6f3;
+  --black: #000;
+  --white: #fff;
+
+  /* the one accent, and the state colours */
+  --accent: #e8a33d;
+  --accent-light: #f2c27a;
+  --accent-pale: #ffd08a;
+  --red: #ef5350;
+  --red-light: #ff9d9a;
+  --red-hot: #ff5a3c;
+  --yellow: #d9b440;
+  --green: #6cc28a;
+
+  /* typefaces: change these two lines to change every letter (fonts.css loads the files) */
+  --face-text: 'BIZ UDPGothic', 'Hiragino Sans', system-ui, sans-serif;
+  --face-mono: 'BIZ UDGothic', ui-monospace, Menlo, monospace;
+
+  /* type scale (px) and the two weights the typeface has */
+  --fs-2xs: 10px;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 16px;
+  --fs-2xl: 24px;
+  --fs-display: 36px;
+  --fw-normal: 400;
+  --fw-bold: 700;
+
+  /* shape */
+  --radius: 2px;
+  --line-w: 1px;
+  --ctl-h: 26px; /* every control in the top strip */
+
+  /* ================================================== 2. named uses */
+
+  /* type */
+  --font-ui: var(--face-text);
+  --font-canvas: var(--face-text);
+  --font-mono: var(--face-mono);
+  --font-player: var(--face-text);
+  --font-player-title: var(--face-text);
+  --fs-base: var(--fs-md);
+
+  /* surfaces */
+  --c-bg: var(--gray-1);
+  --c-panel: var(--gray-3);
+  --c-panel-2: var(--gray-5);
+  --c-head-top: var(--gray-3);
+  --c-head-bottom: var(--gray-3);
+  --c-pop-bg: var(--gray-5);
+  --c-tip-bg: color-mix(in srgb, var(--gray-3) 97%, transparent);
+  --c-toast-bg: color-mix(in srgb, var(--gray-5) 97%, transparent);
+  --c-input-bg: var(--gray-1);
+  --c-chip-bg: var(--gray-7);
+  --c-key-bg: var(--gray-5);
+  --c-preview-bg: var(--black);
+  --c-shadow: transparent;
+  --c-shadow-soft: transparent;
+  /* lines */
+  --c-line: var(--gray-6);
+  --c-line-2: var(--gray-7);
+  --c-line-hover: var(--gray-9);
+  --c-focus: var(--accent);
+  --c-swatch-ring: color-mix(in srgb, var(--white) 20%, transparent);
+  /* text */
+  --c-text: var(--gray-13);
+  --c-text-strong: var(--gray-15);
+  --c-text-soft: var(--gray-14);
+  --c-text-dim: var(--gray-11);
+  --c-text-faint: var(--gray-10);
+  --c-overlay-text: color-mix(in srgb, var(--gray-13) 55%, transparent);
+  /* accents and states */
+  --c-accent: var(--accent);
+  --c-accent-2: var(--accent);
+  --c-warn: var(--red);
+  --c-caution: var(--yellow);
+  --c-ok: var(--green);
+  --c-btn-hover: var(--gray-6);
+  --c-on-bg: var(--gray-8);
+  --c-on-text: var(--white);
+  --c-primary-bg: color-mix(in srgb, var(--accent) 12%, var(--gray-3));
+  --c-primary-bg-hover: color-mix(in srgb, var(--accent) 18%, var(--gray-3));
+  --c-primary-line: color-mix(in srgb, var(--accent) 45%, var(--gray-3));
+  --c-primary-line-hover: color-mix(in srgb, var(--accent) 62%, var(--gray-3));
+  --c-primary-text: var(--accent-light);
+  --c-playing-bg: var(--accent);
+  --c-playing-line: var(--accent);
+  --c-playing-text: var(--gray-2);
+  --c-danger-bg: color-mix(in srgb, var(--red) 16%, var(--gray-3));
+  --c-danger-line: color-mix(in srgb, var(--red) 35%, var(--gray-3));
+  --c-danger-text: var(--red-light);
+  --c-drop-line: var(--accent);
+
+  /* timeline (src/editor/timeline.ts draws with these) */
+  --c-tl-bg: var(--gray-2);
+  --c-tl-row-a: var(--gray-2);
+  --c-tl-row-b: var(--gray-4);
+  --c-tl-head: var(--gray-7);
+  --c-tl-lane-a: var(--gray-3);
+  --c-tl-lane-b: var(--gray-4);
+  --c-tl-lane-name: var(--gray-14);
+  --c-tl-text-dim: var(--gray-11);
+  --c-tl-divider: var(--gray-7);
+  --c-tl-ruler: var(--gray-3);
+  --c-tl-section-none: var(--gray-8);
+  --c-tl-section-text: var(--gray-15);
+  --c-tl-grid: color-mix(in srgb, var(--white) 5%, transparent);
+  --c-tl-grid-strong: color-mix(in srgb, var(--white) 13%, transparent);
+  --c-tl-grid-faint: color-mix(in srgb, var(--white) 2.5%, transparent);
+  --c-tl-sel-fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  --c-tl-sel-line: color-mix(in srgb, var(--accent) 85%, transparent);
+  --c-tl-wave: color-mix(in srgb, var(--gray-12) 30%, transparent);
+  --c-tl-tick: color-mix(in srgb, var(--white) 20%, transparent);
+  --c-tl-tick-strong: color-mix(in srgb, var(--white) 60%, transparent);
+  --c-tl-tick-text: var(--gray-12);
+  --c-tl-marker: color-mix(in srgb, var(--white) 20%, transparent);
+  --c-tl-marker-strong: color-mix(in srgb, var(--white) 38%, transparent);
+  --c-tl-shade: color-mix(in srgb, var(--black) 45%, transparent);
+  --c-tl-corner: var(--gray-3);
+  --c-tl-corner-text: var(--gray-11);
+  --c-tl-playhead: var(--red-hot); /* the one exception to the single accent: the playhead must never be mistaken for a selection */
+  --c-tl-scroll: color-mix(in srgb, var(--white) 18%, transparent);
+  --c-tl-ramp: var(--black);
+  --c-tl-block-mark: color-mix(in srgb, var(--white) 75%, transparent);
+  --c-tl-block-invalid: var(--red);
+  --c-tl-block-primary: var(--white);
+  --c-tl-block-selected: var(--accent-pale);
+  --c-tl-block-shadow: color-mix(in srgb, var(--black) 45%, transparent);
+  --c-tl-label-dark: var(--gray-2);
+  --c-tl-label-light: var(--gray-15);
+  --c-tl-label-sub-dark: color-mix(in srgb, var(--gray-2) 70%, transparent);
+  --c-tl-label-sub-light: color-mix(in srgb, var(--gray-15) 65%, transparent);
+  --c-tl-handle: color-mix(in srgb, var(--white) 85%, transparent);
+  --c-tl-nav-bg: var(--gray-0);
+  --c-tl-nav-view: color-mix(in srgb, var(--white) 80%, transparent);
+  --c-tl-nav-view-fill: color-mix(in srgb, var(--white) 6%, transparent);
+
+  /* player (index.html, src/styles/player.css) */
+  --c-player-bg: var(--black);
+  --c-player-ink: var(--c-text);
+  --c-player-muted: var(--gray-11);
+  --c-player-panel: color-mix(in srgb, var(--gray-3) 92%, transparent);
+  --c-player-line: color-mix(in srgb, var(--white) 16%, transparent);
+  --c-player-accent: var(--accent);
+  --c-player-on: color-mix(in srgb, var(--white) 14%, transparent);
+  --c-player-primary: color-mix(in srgb, var(--accent) 18%, transparent);
+  --c-player-thumb: var(--white);
+  --c-player-thumb-glow: color-mix(in srgb, var(--black) 60%, transparent);
+  --c-player-start-glow: color-mix(in srgb, var(--gray-2) 45%, transparent);
+  --c-player-start-shade: color-mix(in srgb, var(--black) 88%, transparent);
+  --c-player-bar-shade: color-mix(in srgb, var(--black) 80%, transparent);
+  --c-player-dim: color-mix(in srgb, var(--black) 55%, transparent);
+  --c-player-option-bg: var(--c-panel);
+  --c-player-error: var(--red-light);
+  --c-player-strong: var(--white);
+
+  /* player scope (src/show/scope.ts) */
+  --c-scope-bg: color-mix(in srgb, var(--gray-0) 72%, transparent);
+  --c-scope-label-bg: color-mix(in srgb, var(--gray-0) 90%, transparent);
+  --c-scope-label: color-mix(in srgb, var(--gray-14) 85%, transparent);
+  --c-scope-grid: color-mix(in srgb, var(--white) 8%, transparent);
+  --c-scope-text: color-mix(in srgb, var(--gray-11) 80%, transparent);
+  --c-scope-section: color-mix(in srgb, var(--accent) 60%, transparent);
+  --c-scope-wave-past: color-mix(in srgb, var(--accent) 85%, transparent);
+  --c-scope-wave: color-mix(in srgb, var(--gray-12) 50%, transparent);
+  --c-scope-onset: var(--gray-14); /* drawn at several alphas (theme.ts gives it as "r,g,b") */
+  --c-scope-geyser: color-mix(in srgb, var(--white) 90%, transparent);
+  --c-scope-playhead: var(--white);
+  --c-overview-past: color-mix(in srgb, var(--accent) 75%, transparent);
+  --c-overview: color-mix(in srgb, var(--gray-11) 42%, transparent);
+  /* venue editor's top view (src/venues/editor/view.ts). Fixture dots take
+     their kind's lane colour (src/fixtures/), like the timeline rows */
+  --c-vn-bg: var(--gray-2);
+  --c-vn-water: var(--gray-4);
+  --c-vn-water-line: var(--gray-8);
+  --c-vn-grid: color-mix(in srgb, var(--white) 3%, transparent);
+  --c-vn-grid-strong: color-mix(in srgb, var(--white) 7%, transparent);
+  --c-vn-text: var(--gray-11);
+  --c-vn-seat: var(--gray-10);
+  --c-vn-skipped: var(--gray-9);
+  --c-vn-sel: var(--accent);
+  --c-vn-hover: color-mix(in srgb, var(--accent) 45%, transparent);
+  --c-vn-handle: var(--gray-2);
+  --c-vn-stop: var(--red);
+  --c-vn-danger: var(--red-hot);
+  --c-vn-note: var(--yellow);
+}

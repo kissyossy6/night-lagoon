@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Night Lagoon</title>
+    <script>
+      // the player moved to play.html: links and scripts that still open /?show=… /?t=… /?shot … play there
+      if (/[?&](show|shot|t|venue|cam|light|quality|perf|music|gfx|pw|ph|project)(=|&|$)/.test(location.search))
+        location.replace('/play.html' + location.search + location.hash);
+    </script>
+    <link rel="stylesheet" href="/src/styles/home.css" />
+  </head>
+  <body>
+    <div id="bg" aria-hidden="true"></div>
+
+    <!-- スタート（前の本番画面の入口と同じ見た目） -->
+    <section id="start" class="screen">
+      <div class="box">
+        <h1>Night Lagoon</h1>
+        <p>噴水ショーをつくって、本番で流す</p>
+        <div><button id="open-list" class="big">プロジェクト一覧</button></div>
+        <p id="start-note">&nbsp;</p>
+      </div>
+    </section>
+
+    <!-- プロジェクト一覧 -->
+    <section id="list" class="screen" hidden>
+      <div class="wrap">
+        <header class="head">
+          <button class="link" id="to-start">← Night Lagoon</button>
+          <div class="title-row">
+            <h2>プロジェクト</h2>
+            <span class="spacer"></span>
+            <button id="import-btn">JSON を読み込む</button>
+            <button class="primary" id="new-btn">＋ 新規プロジェクト</button>
+            <input type="file" id="import-input" accept=".json,application/json" hidden />
+          </div>
+          <p class="note" id="store-note" hidden></p>
+        </header>
+
+        <div id="mine" class="grid" aria-label="自分のプロジェクト"></div>
+        <div id="empty" class="empty" hidden>
+          <p><b>まだプロジェクトがありません</b></p>
+          <p>下の見本から作るか、空のショーから始めます</p>
+          <div><button class="primary" id="empty-new">＋ 新規プロジェクト</button></div>
+        </div>
+
+        <h3>見本</h3>
+        <p class="sub">複製して、自分のプロジェクトとして編集します。見本そのものは変わりません</p>
+        <div id="samples" class="grid" aria-label="見本"></div>
+      </div>
+    </section>
+
+    <div class="pop" id="card-menu" role="menu" hidden></div>
+
+    <dialog id="dlg">
+      <form method="dialog" id="dlg-form">
+        <h2 id="dlg-title"></h2>
+        <div id="dlg-body"></div>
+        <p class="error" id="dlg-error" hidden></p>
+        <div class="actions" id="dlg-actions"></div>
+      </form>
+    </dialog>
+
+    <div id="toast" role="status" hidden></div>
+    <script type="module" src="/src/home/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "water-show-v2",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite"
+      ],
+      "port": 5199
+    },
+    {
+      "name": "water-show-v2-dist",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "5198",
+        "--strictPort"
+      ],
+      "port": 5198
+    },
+    {
+      "name": "test-feedback",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/test-run/feedback-server.mjs"
+      ],
+      "port": 5201
+    },
+    {
+      "name": "water-show-v2-before",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "backups/_before",
+        "--port",
+        "5299",
+        "--strictPort"
+      ],
+      "port": 5299
+    },
+    {
+      "name": "water-show-v2-alt",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5202"
+      ],
+      "port": 5202
+    }
+  ]
+}

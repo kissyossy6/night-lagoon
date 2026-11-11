@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: compare-whip-colour
+expected_outcome: |
+  Builds a proposal with make-proposal (music analysed), captures now/new at the same times and seat including frames around 92 s, makes a compare sheet and the ab.html toggle page, reports brightness, and states what was not checked (sound). src/ untouched.

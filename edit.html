@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Water Show Editor</title>
+    <!-- in the head, so the first paint already has the look (not added later by the script) -->
+    <link rel="stylesheet" href="/src/editor/editor.css" />
+  </head>
+  <body>
+    <header id="bar">
+      <div class="brand">
+        <a class="back" id="back-link" href="/#projects" title="プロジェクト一覧へ（保存してから戻ります）">← 一覧</a>
+        <button class="pname" id="project-name" title="クリックで名前を変える">確認用</button>
+      </div>
+      <div class="menu" id="file-menu">
+        <button class="btn" id="file-btn" aria-haspopup="true">ファイル ▾</button>
+        <div class="menu-pop" id="file-pop" hidden>
+          <button data-act="duplicate" id="dup-btn">複製して別のプロジェクトにする</button>
+          <hr />
+          <div class="sub">置き換える（⌘Z で戻せる）</div>
+          <button data-act="new">空のショーにする</button>
+          <!-- the versions' 置き換える buttons come from SHOW_VARIANTS (src/editor/main.ts) -->
+          <hr />
+          <button data-act="import">JSON を読み込む…</button>
+          <button data-act="export">JSON を書き出す</button>
+        </div>
+        <input type="file" id="import-input" accept=".json,application/json" hidden />
+      </div>
+      <div class="menu" id="cx-menu">
+        <button class="btn" id="cx-btn" aria-haspopup="true">書き出し ▾</button>
+        <div class="menu-pop" id="cx-pop" hidden></div>
+      </div>
+      <div class="menu" id="venue-menu">
+        <button class="btn" id="venue-btn" aria-haspopup="true" title="この演出を流す会場（レーン・台数・プレビューがその会場になる）">会場 ▾</button>
+        <div class="menu-pop" id="venue-pop" hidden></div>
+      </div>
+      <button class="btn an-chip" id="an-chip" hidden title="Art-Net の送信（クリックで設定）">Art-Net 送信中</button>
+      <div class="group">
+        <button class="btn icon" id="undo-btn" title="元に戻す (⌘/Ctrl+Z)">↶</button>
+        <button class="btn icon" id="redo-btn" title="やり直す (⇧⌘/Ctrl+Z)">↷</button>
+      </div>
+      <div class="sep"></div>
+      <div class="group transport">
+        <button class="btn icon" id="home-btn" title="先頭へ (Home)">⏮</button>
+        <button class="btn play" id="play-btn" title="再生 / 一時停止 (Space)">▶</button>
+        <div class="clock"><span id="clock-bar">1:1</span><span id="clock-sec">0:00.00</span></div>
+        <span class="section-chip" id="section-chip">イントロ</span>
+      </div>
+      <div class="sep"></div>
+      <div class="group">
+        <span class="lbl">照明</span>
+        <div class="seg" id="light-seg">
+          <button data-mode="real" class="on">リアル</button>
+          <button data-mode="ideal">理想</button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="lbl">画質</span>
+        <select id="quality-sel" class="sel">
+          <option value="high">高</option>
+          <option value="medium" selected>中</option>
+          <option value="low">低</option>
+        </select>
+      </div>
+      <button class="btn" id="cam-btn" title="カメラを初期位置に戻す">視点リセット</button>
+      <div class="spacer"></div>
+      <label class="mute" title="音楽をミュート"><input type="checkbox" id="mute-chk" /> ミュート</label>
+      <span class="status" id="music-status">音楽を準備中…</span>
+      <span class="status" id="save-status"></span>
+      <button class="btn show" id="show-btn" title="保存して、本番の画面で再生する（別のタブ）">▶ 本番で再生</button>
+    </header>
+    <main id="app">
+      <section id="left">
+        <div id="preview"><div class="preview-tag" id="preview-tag"></div><div class="pick-tag" id="pick-tag" hidden></div></div>
+        <div id="lower">
+          <nav class="ws-tabs" id="ws-tabs" role="tablist" aria-label="作業画面"></nav>
+          <div id="timeline"></div>
+        </div>
+      </section>
+      <aside id="right">
+        <div class="side-tabs" role="tablist">
+          <button class="on" data-pane="cue" role="tab">キュー</button>
+          <button data-pane="warn" role="tab" id="warn-tab">警告<span class="n" id="warn-n"></span></button>
+        </div>
+        <div id="inspector"></div>
+        <div id="warnings" hidden></div>
+      </aside>
+    </main>
+    <div id="toast" hidden></div>
+    <div id="cx" class="cx-dialog" hidden>
+      <form class="box" id="cx-form">
+        <h2>実機向けに書き出す</h2>
+        <div id="cx-settings">
+          <fieldset>
+            <legend>形式</legend>
+            <div id="cx-formats"></div>
+          </fieldset>
+          <fieldset class="timed">
+            <legend>タイムコード（どの書き出しも同じ設定）</legend>
+            <div class="inline">
+              <label>コマ数 <select id="cx-fps" class="sel"></select></label>
+              <label>開始 <input id="cx-tc" class="tc" type="text" value="00:00:00:00" spellcheck="false" aria-label="ショーの 0 秒のタイムコード" /></label>
+            </div>
+            <p class="hint">開始＝ショーの 0 秒のタイムコード（時:分:秒:コマ）。40 コマはこのシミュレーターの記録と同じ</p>
+          </fieldset>
+          <fieldset class="timed">
+            <legend>範囲</legend>
+            <label><input type="radio" name="cx-range" value="all" checked /> 全編（<span id="cx-all"></span>）</label>
+            <div class="inline">
+              <label><input type="radio" name="cx-range" value="part" /> 指定</label>
+              <input id="cx-from" type="number" min="0" step="0.5" value="0" aria-label="開始（秒）" />秒から
+              <input id="cx-to" type="number" min="0" step="0.5" value="30" aria-label="終了（秒）" />秒まで
+            </div>
+          </fieldset>
+          <p class="note" id="cx-note"></p>
+        </div>
+        <div id="cx-run" hidden>
+          <progress id="cx-progress" max="1" value="0"></progress>
+          <p class="note" id="cx-state"></p>
+          <pre id="cx-peek" hidden></pre>
+          <div id="cx-done" hidden><button type="button" class="btn" id="cx-reveal">Finder で表示</button></div>
+        </div>
+        <p class="error" id="cx-error" hidden></p>
+        <div class="actions">
+          <button type="button" class="btn" id="cx-cancel">閉じる</button>
+          <button type="submit" class="btn primary" id="cx-go">書き出す</button>
+        </div>
+      </form>
+    </div>
+    <div id="an" class="cx-dialog" hidden>
+      <form class="box" id="an-form">
+        <h2>Art-Net で送る</h2>
+        <p class="note">再生・一時停止・移動に合わせて、今の時刻の DMX の値（割り当て表のとおり）を送り続けます。送る回数とコマはタイムコードの設定（<span id="an-fps"></span>）に合わせます。<b>開発サーバー（npm run dev）で開いているときだけ</b>使えます</p>
+        <fieldset>
+          <legend>送り先</legend>
+          <div class="inline">
+            <label>IP <input id="an-host" class="tc" type="text" spellcheck="false" value="127.0.0.1" /></label>
+            <label>ポート <input id="an-port" type="number" min="1" max="65535" value="6454" /></label>
+          </div>
+          <p class="hint">127.0.0.1 はこのパソコン自身。表示ソフトや確かめの道具（scripts/artnet-listen.mjs）で受けられます</p>
+        </fieldset>
+        <p class="note" id="an-state"></p>
+        <div class="actions">
+          <button type="button" class="btn" id="an-close">閉じる</button>
+          <button type="button" class="btn" id="an-stop">止める</button>
+          <button type="submit" class="btn primary" id="an-go">送る</button>
+        </div>
+      </form>
+    </div>
+    <script type="module" src="/src/editor/main.ts"></script>
+  </body>
+</html>

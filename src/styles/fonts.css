@@ -1,0 +1,9 @@
+/*
+ * The typeface files (public/fonts/, SIL Open Font License: public/fonts/OFL.txt).
+ * To change typeface: put the new files in public/fonts/, list them here, and
+ * point --face-text / --face-mono in tokens.css at the new family names.
+ */
+@font-face { font-family: 'BIZ UDPGothic'; src: url('/fonts/BIZUDPGothic-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'BIZ UDPGothic'; src: url('/fonts/BIZUDPGothic-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'BIZ UDGothic'; src: url('/fonts/BIZUDGothic-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'BIZ UDGothic'; src: url('/fonts/BIZUDGothic-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }

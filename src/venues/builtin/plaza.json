@@ -1,0 +1,16 @@
+{
+  "id": "plaza",
+  "name": "広場の床噴水",
+  "scale": "plaza",
+  "note": "30 × 20 m の床噴水（水は床の格子に落ちる）。床の噴き上げ（4 m）の3列と、首振り（6 m）の1列、真ん中の1本。一番小さい 2.5号の花火でも客席まで 100 m 要るので、花火は置かない。水の高さは縁までの距離以下、首振りは倒しても 7.7 m 先（2h·sin2θ）、しぶきの余裕を足して 8.9 m で、縁（9 m）の内に落ちる",
+  "water": { "kind": "rect", "width": 30, "depth": 20 },
+  "wind": [1, 0, 0],
+  "parts": [
+    { "kind": "line", "name": "前列", "group": "grid", "fixture": "floor-jet", "count": 12, "from": [-11, 5], "to": [11, 5], "note": "グリッドの役：前・中・後の3列" },
+    { "kind": "line", "name": "中列", "group": "grid", "fixture": "floor-jet", "count": 12, "from": [-11, 2.5], "to": [11, 2.5] },
+    { "kind": "line", "name": "後列", "group": "grid", "fixture": "floor-jet", "count": 12, "from": [-11, -5], "to": [11, -5] },
+    { "kind": "line", "name": "首振りの列", "group": "whip", "fixture": "floor-whip", "count": 8, "from": [-6, 0], "to": [6, 0], "note": "ウィップの役" },
+    { "kind": "single", "name": "真ん中", "group": "geyser", "fixture": "floor-jet", "at": [0, -2.5], "note": "ガイザーの役" },
+    { "kind": "seats", "name": "広場の前", "from": [-15, 13], "to": [15, 13], "note": "床の縁から 3 m 離れて立つ" }
+  ]
+}
