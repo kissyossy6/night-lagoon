@@ -643,6 +643,7 @@ void transport.loadMusic().then((m) => {
   if (m !== 'ready' || !transport.audio) return;
   music = analyseMusic(transport.audio);
   setCurves(music.curves);
+  timeline.setOnsets(music.onsets);
   const rebuild = (!restored && generate !== 'empty') || (extended && autosave);
   if (rebuild && withoutVenue(state.file) !== openedAs) {
     // edited while the music loaded: keep those edits, do not rebuild over them
@@ -734,6 +735,7 @@ async function reloadMusic() {
   if (loadedMusic !== musicKey()) return; // changed again meanwhile: that load follows
   music = m === 'ready' && transport.audio ? analyseMusic(transport.audio) : null;
   setCurves(music?.curves ?? {});
+  timeline.setOnsets(music?.onsets ?? []);
   preview.setShow(view.filter(state.file));
   musicSettled = true;
   inspector.update();

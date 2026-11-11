@@ -46,12 +46,18 @@ import { folderOfCue, folderOfLane, touchesLight, type EditorView } from './view
 const HEAD_W = 124;
 const SECT_H = 20;
 const RULER_H = 46;
+/** The row of the music's onsets (音の頭) under the ruler. */
+const ONSET_H = 14;
+/** Onsets weaker than this (0..1) are not marked, nor snapped to. */
+const ONSET_MIN = 0.25;
+/** A dragged cue snaps to an onset this close on screen (px), when no beat is closer. */
+const ONSET_SNAP_PX = 8;
 const NAV_H = 24;
 const ROW_H = 21;
 const LANE_PAD = 5;
 const MIN_PX = 14;
 const EDGE_PX = 6;
-const TOP = SECT_H + RULER_H;
+const TOP = SECT_H + RULER_H + ONSET_H;
 /** Folder header row when open; folded rows are a strip per lane. */
 const FOLDER_H = 24;
 const STRIP = 6;
@@ -128,6 +134,10 @@ export class Timeline {
   private playhead = 0;
   private queued = false;
   private packedPps = 0;
+  /** The music's onsets (音の頭) strong enough to mark, in time order. */
+  private onsets: { t: number; strength: number }[] = [];
+  /** While dragging: the onset the cue snapped to, drawn as a guide. */
+  private snapGuide: number | null = null;
 
   constructor(
     private readonly host: HTMLElement,
@@ -529,7 +539,7 @@ export class Timeline {
         const p0 = d.orig.get(d.primary);
         if (p0 === undefined) return;
         let tp = p0 + (x - d.x0) / this.pps;
-        if (!e.altKey) tp = snapToBeat(tp, f);
+        tp = this.snap(tp, e.altKey);
         let delta = tp - p0;
         const minOrig = Math.min(...d.orig.values());
         delta = Math.max(delta, -minOrig);
@@ -596,6 +606,7 @@ export class Timeline {
   private onUp(e: PointerEvent) {
     const d = this.drag;
     this.drag = null;
+    this.snapGuide = null;
     if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
     if (d && (d.mode === 'move' || d.mode === 'resize')) {
       this.state.seal();
@@ -613,7 +624,8 @@ export class Timeline {
     if (lane < 0 || LANES[lane].missing) return;
     const f = this.state.file;
     let t = Math.max(0, this.xt(x));
-    if (!e.altKey) t = snapToBeat(t, f);
+    t = this.snap(t, e.altKey);
+    this.snapGuide = null;
     const group = LANES[lane].group;
     // what a new cue of this lane looks like is the fixture table's (src/fixtures/)
     const cue: Cue = { t: encodeTime(t, f), ...kindOfLane(lane).cue.newCue(group, LAYOUT) };
@@ -725,6 +737,42 @@ export class Timeline {
       }
       this.request();
     }
+  }
+
+  /** The analysed music's onsets (src/audio/analysis.ts), marked under the ruler and snapped to. */
+  setOnsets(list: readonly { t: number; strength: number }[]) {
+    this.onsets = list.filter((o) => o.strength >= ONSET_MIN).sort((a, b) => a.t - b.t);
+    this.request();
+  }
+
+  /**
+   * Where a cue dragged or added at t lands: the nearest beat, or an onset
+   * when one is within ONSET_SNAP_PX and nearer than that beat. Alt: as is.
+   */
+  private snap(t: number, alt: boolean): number {
+    this.snapGuide = null;
+    if (alt) return t;
+    const f = this.state.file;
+    const beat = snapToBeat(t, f);
+    const reach = ONSET_SNAP_PX / this.pps;
+    let best: number | null = null;
+    // binary search for the first onset at or after t - reach
+    let lo = 0;
+    let hi = this.onsets.length;
+    while (lo < hi) {
+      const m = (lo + hi) >> 1;
+      if (this.onsets[m].t < t - reach) lo = m + 1;
+      else hi = m;
+    }
+    for (let k = lo; k < this.onsets.length && this.onsets[k].t <= t + reach; k++) {
+      const o = this.onsets[k].t;
+      if (best === null || Math.abs(o - t) < Math.abs(best - t)) best = o;
+    }
+    if (best !== null && Math.abs(best - t) < Math.abs(beat - t)) {
+      this.snapGuide = best;
+      return Math.round(best * 1000) / 1000;
+    }
+    return beat;
   }
 
   request() {
@@ -984,9 +1032,24 @@ export class Timeline {
     for (let s = Math.ceil(t0 / secStep) * secStep; s <= t1; s += secStep) {
       const xs = Math.round(this.tx(s)) + 0.5;
       g.fillStyle = ui.tlMarker;
-      g.fillRect(xs, TOP - 4, 1, 4);
+      g.fillRect(xs, SECT_H + RULER_H - 4, 1, 4);
       g.fillStyle = ui.tlMarkerStrong;
-      g.fillText(clockLabel(s).replace(/\.00$/, ''), xs + 3, TOP - 4);
+      g.fillText(clockLabel(s).replace(/\.00$/, ''), xs + 3, SECT_H + RULER_H - 4);
+    }
+    // the music's onsets (音の頭): a tick each, taller and brighter when stronger
+    const oy = SECT_H + RULER_H;
+    g.fillStyle = ui.tlDivider;
+    g.fillRect(HEAD_W, oy, W - HEAD_W, 1);
+    if (this.onsets.length) {
+      g.fillStyle = ui.tlWave;
+      for (const o of this.onsets) {
+        if (o.t < t0 - 1 || o.t > t1 + 1) continue;
+        const xo = Math.round(this.tx(o.t)) + 0.5;
+        const h = 3 + Math.round((ONSET_H - 5) * o.strength);
+        g.globalAlpha = 0.45 + 0.55 * o.strength;
+        g.fillRect(xo - 0.5, oy + ONSET_H - h, 1.5, h);
+      }
+      g.globalAlpha = 1;
     }
     // end of show
     const xe = this.tx(this.duration);
@@ -1007,9 +1070,20 @@ export class Timeline {
     g.fillStyle = ms === 'ready' ? ui.tlTextDim : ms === 'loading' ? ui.tlCaution : ui.tlTextDim;
     g.font = `${ui.fs2xs} ${ui.fontCanvas}`;
     g.fillText(ms === 'ready' ? '♪ 音楽あり' : ms === 'loading' ? '♪ 生成中…' : '音楽なし', 12, SECT_H + 32);
+    g.fillStyle = ui.tlCornerText;
+    g.fillText(this.onsets.length ? '音の頭' : '音の頭（解析待ち）', 12, SECT_H + RULER_H + ONSET_H / 2 + 1);
     g.fillStyle = ui.tlDivider;
     g.fillRect(0, TOP - 1, W, 1);
     g.fillRect(HEAD_W - 1, 0, 1, TOP);
+
+    // ------------------------------------------- the onset snapped to
+    if (this.snapGuide !== null && this.drag?.mode === 'move') {
+      const xg = Math.round(this.tx(this.snapGuide)) + 0.5;
+      if (xg >= HEAD_W && xg <= W) {
+        g.fillStyle = ui.accent;
+        g.fillRect(xg - 0.5, SECT_H + RULER_H, 1, this.laneBottom - SECT_H - RULER_H);
+      }
+    }
 
     // -------------------------------------------------------- playhead
     const xp = Math.round(this.tx(this.playhead)) + 0.5;

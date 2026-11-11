@@ -106,6 +106,25 @@ try {
   ok(after.past === 1, `曲の後ろのキューは消さずに警告：${after.past}`);
   ok(after.sects.join() === '全体', `区間は「全体」1つ：${after.sects.join('・')}`);
 
+  // the onsets (音の頭) under the ruler, and snapping to them (the grid is still 120 BPM from 0 s here,
+  // so the click track's beats at 0.5 + k × 0.46875 s fall between its beats)
+  const snap = await page.evaluate(() => {
+    const tl = window.__editor.timeline;
+    tl.pps = 60; // 8 px = 0.13 s
+    const beat = (k) => 0.5 + k * (60 / 128);
+    return {
+      marks: tl.onsets.length,
+      near: tl.snap(beat(20) + 0.04, false), // 9.875 + 0.04: the onset (the nearest beat 10.0 is farther)
+      wantNear: beat(20),
+      grid: tl.snap(beat(21) + 0.2, false), // 0.2 s off: too far from the onset, the beat grid
+      alt: tl.snap(beat(20) + 0.04, true),
+    };
+  });
+  ok(snap.marks >= 100 && snap.marks <= 140, `音の頭の印：${snap.marks}（作った曲は 60 秒に 128 拍）`);
+  ok(Math.abs(snap.near - snap.wantNear) < 0.02, `近くの音の頭にスナップ：${snap.near}（音の頭 ${snap.wantNear.toFixed(3)}）`);
+  ok(Math.abs(snap.grid - Math.round(snap.grid * 2) / 2) < 1e-9, `音の頭から遠いと拍のグリッドへ：${snap.grid}`);
+  ok(Math.abs(snap.alt - (snap.wantNear + 0.04)) < 1e-9, `Alt ではスナップしない：${snap.alt.toFixed(3)}`);
+
   // the beat measured in the music: a hint, put in by a button
   await page.waitForSelector('#inspector :text("拍の目安")', { timeout: 30000 });
   const hint = await page.locator('#inspector :text("拍の目安")').innerText();
