@@ -36,6 +36,11 @@ export class Transport {
   private muted = false;
   private listeners: (() => void)[] = [];
 
+  /** Where the music comes from: the project's own file, or null for the shared recording (public/music). */
+  musicSource: { url: string; name: string } | null = null;
+  /** The loaded music's name, for people. */
+  musicName = '';
+
   constructor(public duration: number) {}
 
   onChange(fn: () => void) {
@@ -130,28 +135,54 @@ export class Transport {
    * silent. ?music=score generates the composed score instead.
    */
   async loadMusic(): Promise<MusicState> {
+    // loading again (another music picked, or undone): what plays now stops being heard
+    if (this.music !== 'loading') {
+      const t = this.now();
+      this.stopSource();
+      this.buffer = null;
+      this.peaks = null;
+      this.music = 'loading';
+      if (this.playing) this.startClock(t);
+      this.emit();
+    }
+    const source = this.musicSource;
     try {
       let buf: AudioBuffer;
-      if (new URLSearchParams(location.search).get('music') === 'score') {
+      let name = '';
+      const ctx = new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 });
+      if (source) {
+        // a project's own music: all of it (its length is the show's)
+        const { loadMusicUrl } = await import('../audio/background');
+        const m = await loadMusicUrl(source.url, source.name, ctx, Number.MAX_SAFE_INTEGER);
+        buf = m.buffer;
+        name = m.name;
+      } else if (new URLSearchParams(location.search).get('music') === 'score') {
         const mod = await import('../audio/score');
         buf = await mod.renderScore();
       } else {
         const { loadBackground } = await import('../audio/background');
-        const m = await loadBackground(new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 }), this.duration);
+        const m = await loadBackground(ctx, this.duration);
         if (!m) throw new Error('no background music in public/music');
         buf = m.buffer;
+        name = m.name;
       }
+      // another source was asked for meanwhile: that load answers instead
+      if (source !== this.musicSource) return this.music;
       this.buffer = buf;
+      this.musicName = name;
       this.peaks = computePeaks(buf);
       this.music = 'ready';
       // if already playing on the fallback clock, hand over to the audio clock
       if (this.playing) {
         const t = this.now();
+        this.stopSource();
         this.startClock(t);
       }
     } catch (e) {
+      if (source !== this.musicSource) return this.music;
       console.warn('[editor] music unavailable:', e);
       this.music = 'none';
+      this.musicName = '';
     }
     this.emit();
     return this.music;

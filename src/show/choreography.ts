@@ -1086,8 +1086,13 @@ export function buildShow(music?: MusicFeatures, variant: ShowVariant = 'lagoon'
  * the same version. Null when the show already runs the music's length.
  */
 export function extendToMusic(file: ShowFile, music?: MusicFeatures): ShowFile | null {
-  if (!(file.duration < SHOW_DURATION - 0.01)) return null;
-  const variant = SHOW_VARIANTS.find((v) => v.title === file.title)?.id ?? 'lagoon';
+  // a show on its own music has that music's length (docs/music-plan.md)
+  if (file.music || !(file.duration < SHOW_DURATION - 0.01)) return null;
+  // only a built-in version saved back then (its title; the lagoon's was
+  // 'Night Lagoon' before 2026-11-12): a show of your own that is simply
+  // shorter (an empty show is 180 s) keeps its length and its cues
+  const variant = SHOW_VARIANTS.find((v) => v.title === file.title || v.title.replace('Rhapsody in Blue', 'Night Lagoon') === file.title)?.id;
+  if (!variant) return null;
   const built = buildShow(music, variant);
   const cut = MUSIC.last - 0.1;
   const before = file.cues.filter((c) => cueTime(c.t, file) < cut);

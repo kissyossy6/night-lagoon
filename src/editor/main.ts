@@ -1,6 +1,7 @@
 import type { LightingMode } from '../core/nozzles';
-import { analyseMusic, type MusicFeatures } from '../audio/analysis';
+import { analyseMusic, estimateTempo, type MusicFeatures } from '../audio/analysis';
 import { MAIN_SHOW, SHOW_VARIANTS, buildShow, extendToMusic, type ShowVariant } from '../show/choreography';
+import { SHOW_DURATION } from '../show/song';
 import { setCurves } from '../show/cues';
 import type { Quality } from '../show/layout';
 import { sectionSpans, spanAt } from '../show/sections';
@@ -19,7 +20,7 @@ import { Preview } from './preview';
 import { EditorState, MAX_HISTORY } from './state';
 import { Timeline } from './timeline';
 import { Transport } from './transport';
-import { isSampleId, projectStore, setLastProject, type ProjectStore } from '../projects/store';
+import { isSampleId, musicUrl, projectStore, setLastProject, type ProjectStore } from '../projects/store';
 import type { ProjectDoc } from '../projects/types';
 
 /**
@@ -218,9 +219,29 @@ const actions = {
   playheadTime: () => transport.now(),
   snapTime: (t: number) => encodeTime(snapToBeat(t, state.file), state.file),
   seek: (t: number) => transport.seek(t),
+  music: {
+    blocked: () => (project && store && !isSampleId(project.id) ? null : 'プロジェクトとして開くと、曲を入れられます'),
+    pick: (file: File) => void pickMusic(file),
+    reset: () => resetMusic(),
+    loaded: () => (transport.music === 'ready' ? transport.musicName : transport.music === 'loading' ? '読み込み中…' : 'なし'),
+    tempo: () => musicTempo(),
+  },
 };
 
-new Inspector($('inspector'), state, actions);
+// the analysed music (declared before the inspector, which reads its beat)
+let music: MusicFeatures | null = null;
+let musicSettled = false;
+/** The beat measured in the project's own music, once analysed (a hint for BPM and offset). */
+let tempoOf: { music: MusicFeatures; tempo: ReturnType<typeof estimateTempo> } | null = null;
+const inspector = new Inspector($('inspector'), state, actions);
+// the music row says when the music has loaded (and its beat, once measured)
+let musicShown = '';
+transport.onChange(() => {
+  const k = `${transport.music}|${transport.musicName}`;
+  if (k === musicShown) return;
+  musicShown = k;
+  inspector.update();
+});
 
 // ------------------------------------------------------------------ header
 
@@ -609,8 +630,14 @@ preview.rt.stage.renderer.setAnimationLoop(frame);
 // music: optional; the editor works silently without it. Once loaded its
 // waveform is analysed, so 'follow' cues preview against the real music and
 // the built-in show is rebuilt to follow it (unless an autosave was restored)
-let music: MusicFeatures | null = null;
-let musicSettled = false;
+// the project's own music (docs/music-plan.md), else the shared recording
+const musicKey = () => state.file.music?.file ?? '';
+const musicSourceOf = () => {
+  const m = state.file.music;
+  return m && project ? { url: musicUrl(project.id, m.file), name: m.name } : null;
+};
+transport.musicSource = musicSourceOf();
+let loadedMusic = musicKey();
 void transport.loadMusic().then((m) => {
   if (m === 'none') toast('音楽が見つかりません — 無音のクロックで再生します');
   if (m !== 'ready' || !transport.audio) return;
@@ -640,7 +667,78 @@ void transport.loadMusic().then((m) => {
     state.load(inVenue(extendToMusic(autosave, music) ?? state.file));
     saveNow();
   } else preview.setShow(view.filter(state.file));
-}).finally(() => (musicSettled = true));
+}).finally(() => {
+  musicSettled = true;
+  inspector.update();
+  if (loadedMusic !== musicKey()) void reloadMusic();
+});
+
+/** Make an audio file the project's music (docs/music-plan.md): kept in its folder, the show's length becomes the music's. */
+async function pickMusic(file: File) {
+  if (!project || !store) return;
+  toast(`曲を読み込み中：${file.name}`);
+  let length: number;
+  try {
+    const buf = await new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 }).decodeAudioData(await file.arrayBuffer());
+    length = Math.round(buf.duration * 100) / 100;
+  } catch {
+    toast(`この曲は読めませんでした：${file.name}`);
+    return;
+  }
+  let stored: string;
+  try {
+    stored = await store.saveMusic(project.id, file, file.name);
+  } catch (e) {
+    toast(`曲を入れられませんでした：${e instanceof Error ? e.message : e}`);
+    return;
+  }
+  state.mutate(
+    (f) => {
+      f.music = { file: stored, name: file.name, duration: length };
+      f.duration = length;
+    },
+    { structural: true, source: 'music' },
+  );
+  // cues after the end stay (docs/music-plan.md 4.1): the warnings list them
+  const past = state.file.cues.filter((c) => startOf(c, state.file) >= length).length;
+  toast(`曲を「${file.name}」（${clockLabel(length)}）にしました。` + (past ? `曲の後ろにあるキューが ${past} あります（消していません。警告の一覧に出ます）。` : '') + '⌘Z で戻せます');
+}
+
+/** Back to the shared recording (Rhapsody in Blue) and its length. */
+function resetMusic() {
+  if (!state.file.music) return;
+  state.mutate(
+    (f) => {
+      delete f.music;
+      f.duration = SHOW_DURATION;
+    },
+    { structural: true, source: 'music' },
+  );
+  toast('曲を共通の曲（Rhapsody in Blue）に戻しました。⌘Z で戻せます');
+}
+
+// another music (picked, undone, redone, a file loaded): load and analyse it
+state.on((e) => {
+  if (e.kind === 'file' && musicSettled && musicKey() !== loadedMusic) void reloadMusic();
+});
+function musicTempo(): { bpm: number; offset: number } | null {
+  if (!music || !state.file.music) return null;
+  if (tempoOf?.music !== music) tempoOf = { music, tempo: estimateTempo(music.onsets) };
+  return tempoOf.tempo;
+}
+async function reloadMusic() {
+  loadedMusic = musicKey();
+  transport.musicSource = musicSourceOf();
+  musicSettled = false;
+  const m = await transport.loadMusic();
+  if (loadedMusic !== musicKey()) return; // changed again meanwhile: that load follows
+  music = m === 'ready' && transport.audio ? analyseMusic(transport.audio) : null;
+  setCurves(music?.curves ?? {});
+  preview.setShow(view.filter(state.file));
+  musicSettled = true;
+  inspector.update();
+  if (m === 'none') toast('曲を読み込めませんでした — 無音で再生します');
+}
 
 // 会場 ▾: the venue this show plays in (docs/detailed-design.md 6.5), and
 // the venue editor (venue.html) on it, in its own tab

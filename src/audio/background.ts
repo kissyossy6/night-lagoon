@@ -49,6 +49,13 @@ export async function loadBackground(ctx: BaseAudioContext, duration: number): P
   return null;
 }
 
+/** A project's own music (docs/music-plan.md), from where the dev server keeps it. */
+export async function loadMusicUrl(url: string, name: string, ctx: BaseAudioContext, duration: number): Promise<BackgroundMusic> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`曲を読めませんでした（${name}、HTTP ${res.status}）`);
+  return { buffer: await decode(await res.arrayBuffer(), ctx, duration), name };
+}
+
 /** A file the viewer picked. */
 export async function decodeFile(file: File, ctx: BaseAudioContext, duration: number): Promise<BackgroundMusic> {
   return { buffer: await decode(await file.arrayBuffer(), ctx, duration), name: file.name };

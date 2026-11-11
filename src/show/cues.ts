@@ -74,6 +74,12 @@ export interface ScreenFrame {
   /** Draw only this scene (a clip played alone). */
   only?: string;
   /**
+   * Nothing chosen to show: black. A show on its own music has no story
+   * timed to it (the drawn story belongs to Rhapsody in Blue), so before
+   * its first clip the screens stay dark (docs/music-plan.md 4.3).
+   */
+  blank?: boolean;
+  /**
    * The projector's brightness across the panorama, left to right, as a
    * share of its brightest zone; missing when every zone is alike.
    */
@@ -432,7 +438,8 @@ export function screenAt(show: CompiledShow, t: number): ScreenFrame {
     if (c.start > t) break;
     clip = c;
   }
-  return clip ? { t: clip.base + (t - clip.start), video: clip.video, ...(clip.only ? { only: clip.only } : {}) } : { t };
+  if (!clip) return show.file.music ? { t, blank: true } : { t };
+  return { t: clip.base + (t - clip.start), video: clip.video, ...(clip.only ? { only: clip.only } : {}) };
 }
 
 /** On/off through a valve: a move from or to zero pressure is quick. */

@@ -1,4 +1,4 @@
-import { CH, CHANNELS, HEAD_MAX_DEG_S, LED_COLOR_FADE_S, LED_FADE_OUT_S, evaluate, type CompiledShow } from './cues';
+import { CH, CHANNELS, HEAD_MAX_DEG_S, LED_COLOR_FADE_S, LED_FADE_OUT_S, cueTime, evaluate, type CompiledShow } from './cues';
 import { zonesOfScreen, type Layout } from './layout';
 import { MIST_LINGER } from './projector';
 import type { PyroWarning } from '../pyro/schedule';
@@ -19,7 +19,7 @@ import type { PyroWarning } from '../pyro/schedule';
  */
 
 export type CheckLevel = 'danger' | 'caution' | 'info';
-export type CheckKind = 'pyro' | 'head' | 'water' | 'led' | 'missing' | 'nomist' | 'linger';
+export type CheckKind = 'pyro' | 'head' | 'water' | 'led' | 'missing' | 'past' | 'nomist' | 'linger';
 
 export interface Check {
   /** Cue index in the show file. */
@@ -36,6 +36,7 @@ export const CHECK_KINDS: Record<CheckKind, { level: CheckLevel; title: string; 
   head: { level: 'caution', title: '首振りが速すぎる', note: `上限 ${HEAD_MAX_DEG_S}°/秒に落として動きます。長さを延ばすと書いたとおりになります` },
   water: { level: 'caution', title: '水が上がりきらない', note: 'ポンプが全開になる前に下げています（ポンプ約1秒＋水が上がる時間）' },
   missing: { level: 'caution', title: 'この会場で動かない', note: 'この会場に、狙う台がありません' },
+  past: { level: 'caution', title: '曲の後ろにある', note: '曲（ショーの長さ）が終わった後の時刻にあるので、流れません。前へ動かすか、要らなければ消してください。曲を替えても消さずに残しています' },
   nomist: { level: 'info', title: '霧の無い所に映している', note: 'プロジェクターが映している間、この区画には霧がありません。映像は奥の物や空に当たります。わざとでなければ、その区画の明るさを 0 に' },
   linger: { level: 'info', title: '霧を下げた後も映している', note: '下げた後に残る霧（約3秒）に映像が残ります。わざとならよい。像を先に消すなら、霧を下げる前にプロジェクターを 0 に' },
   led: { level: 'info', title: '光の変化を、LED の速さに合わせた', note: `色は ${LED_COLOR_FADE_S} 秒、消えるのは ${LED_FADE_OUT_S} 秒かけて変わります（パッと変えない、2026-10-26 の決定）` },
@@ -75,6 +76,12 @@ export function checkShow(show: CompiledShow, layout: Layout, picture?: PictureM
     out.push({ source, level: red.length ? 'danger' : 'caution', kind: 'pyro', text: pyroText(w, ws.length) });
   }
   for (const source of show.limited) out.push({ source, level: 'caution', kind: 'head', text: '書いた長さより遅れて着く' });
+  // after the music's end (a shorter song picked, docs/music-plan.md)
+  const end = show.file.duration;
+  show.file.cues.forEach((c, source) => {
+    const t = cueTime(c.t, show.file);
+    if (Number.isFinite(t) && t >= end) out.push({ source, level: 'caution', kind: 'past', text: `${t.toFixed(1)} 秒（曲は ${end.toFixed(1)} 秒まで）` });
+  });
 
   // pumps: the water has not reached the height when the cue lowers it
   const late = new Map<number, { n: number; short: number }>();

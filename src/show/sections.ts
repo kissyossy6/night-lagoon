@@ -44,13 +44,20 @@ export interface SectionSpan {
   i: number;
 }
 
-/** The file's sections, or the song's form when it has none. */
-export function sectionsOf(file?: Pick<ShowFile, 'sections'>): readonly ShowSection[] {
-  return file?.sections?.length ? file.sections : DEFAULT_SECTIONS;
+/**
+ * A show on its own music (ShowFile.music) starts as one stretch: the
+ * recording's form above belongs to Rhapsody in Blue (docs/music-plan.md).
+ */
+export const OWN_MUSIC_SECTIONS: readonly ShowSection[] = [{ name: '全体', t: 0, color: SECTION_PALETTE[0] }];
+
+/** The file's sections, or, when it has none, its music's form. */
+export function sectionsOf(file?: Pick<ShowFile, 'sections' | 'music'>): readonly ShowSection[] {
+  if (file?.sections?.length) return file.sections;
+  return file?.music ? OWN_MUSIC_SECTIONS : DEFAULT_SECTIONS;
 }
 
 /** Sections in time order with their ends (the next start, or `duration`). */
-export function sectionSpans(file: Pick<ShowFile, 'sections'> | undefined, duration: number): SectionSpan[] {
+export function sectionSpans(file: Pick<ShowFile, 'sections' | 'music'> | undefined, duration: number): SectionSpan[] {
   const list = sectionsOf(file)
     .map((s, i) => ({ s, i }))
     .sort((a, b) => a.s.t - b.s.t);

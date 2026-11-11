@@ -40,6 +40,7 @@ export function projectionScreen(
       const every = this.every;
       if (frame++ % every !== 0) return;
       if (f.video) projection.image(v, v?.videoWidth ?? 0, v?.videoHeight ?? 0, f.video.fit);
+      else if (f.blank) projection.image(null, 0, 0, 'contain');
       else projection.render(f.t, f.only);
       // the light the picture throws on the water is read before the
       // projector's zones dim it (as the screens' brightness did)

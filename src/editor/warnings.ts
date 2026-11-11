@@ -13,7 +13,7 @@ const LEVELS: { level: CheckLevel; name: string; empty: string }[] = [
   { level: 'caution', name: '書いたとおりに動かない', empty: 'いまは無し' },
   { level: 'info', name: 'お知らせ（自動で合わせた）', empty: 'いまは無し' },
 ];
-const KIND_ORDER: CheckKind[] = ['pyro', 'missing', 'head', 'water', 'nomist', 'linger', 'led'];
+const KIND_ORDER: CheckKind[] = ['pyro', 'past', 'missing', 'head', 'water', 'nomist', 'linger', 'led'];
 
 export interface WarningActions {
   /** Select cue i, show it in the timeline and go to its time. */

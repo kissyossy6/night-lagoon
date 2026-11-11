@@ -33,7 +33,8 @@ export class ShowClock {
   playing = false;
   onEnd: (() => void) | null = null;
 
-  constructor(readonly duration: number) {}
+  /** The show's length (s): its file's duration, set again when the show changes. */
+  constructor(public duration: number) {}
 
   get hasMusic() {
     return this.buffer !== null;

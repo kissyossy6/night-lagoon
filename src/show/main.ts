@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { LightingMode } from '../core/nozzles';
-import { decodeFile, loadBackground } from '../audio/background';
+import { decodeFile, loadBackground, loadMusicUrl } from '../audio/background';
 import { projectionScreen } from '../screen/screen';
 import { analyseMusic } from '../audio/analysis';
 import { mixSplash, renderSplash } from '../audio/splash';
@@ -24,7 +24,7 @@ import { SHOW_DURATION } from './song';
 import { sectionSpans, spanAt } from './sections';
 import { TEST_SHOW } from './test-show';
 import type { ShowFile } from './types';
-import { lastProject, projectStore, isSampleId } from '../projects/store';
+import { lastProject, musicUrl, projectStore, isSampleId } from '../projects/store';
 import type { ProjectDoc } from '../projects/types';
 
 /** The editor's single autosave from before projects (read only for ?show=edited when no project was opened yet). */
@@ -119,6 +119,17 @@ function loadShowFile(): ShowFile {
 /** Waveform analysis of the music once it is loaded (src/audio/analysis.ts). */
 let music: ReturnType<typeof analyseMusic> | null = null;
 rt.setShow(loadShow());
+/** The show's length: its file's (a project on its own music runs that music's length, docs/music-plan.md). */
+const showLength = () => rt.file.duration;
+/**
+ * The music under the show: the project's own (ShowFile.music), else the
+ * shared recording (public/music/background.*) cut to the built-in length.
+ */
+function loadShowMusic(ctx: BaseAudioContext) {
+  const own = rt.file.music;
+  if (own && project) return loadMusicUrl(musicUrl(project.id, own.file), own.name, ctx, showLength());
+  return loadBackground(ctx, SHOW_DURATION);
+}
 // the start screen and the tab name say which version is open (SHOW_VARIANTS' title, or the saved file's)
 {
   const title = project?.name || rt.file.title || 'Night Lagoon';
@@ -159,6 +170,7 @@ function followMusic(buffer: AudioBuffer) {
   scope.setAudio(buffer, music.onsets);
   setCurves(music.curves);
   rt.setShow(loadShow());
+  syncLength();
   labelSections();
   shots = directShow(music, { screenOpening: screenOpening(rt.file) });
   updateSplash();
@@ -172,12 +184,12 @@ function updateSplash() {
   const m = clock.music;
   if (!m || shot) return;
   const t0 = performance.now();
-  const buf = renderSplash(rt.show, rt.layout, SHOW_DURATION, m.sampleRate, music?.curves.level);
+  const buf = renderSplash(rt.show, rt.layout, showLength(), m.sampleRate, music?.curves.level);
   clock.setLayer(buf);
   console.info(`water sound rendered in ${(performance.now() - t0).toFixed(0)} ms`);
   // the fireworks, heard from the audience seat (src/audio/pyro.ts)
   const seat = rt.venue.seats.find((s) => s.id === 'audience') ?? rt.venue.seats[0];
-  clock.setPyro(rt.show.bursts.length ? renderPyro(rt.show.bursts, seat.pos, SHOW_DURATION, m.sampleRate) : null);
+  clock.setPyro(rt.show.bursts.length ? renderPyro(rt.show.bursts, seat.pos, showLength(), m.sampleRate) : null);
 }
 function setSplash(on: boolean) {
   splashOn = on;
@@ -207,7 +219,7 @@ controls.enabled = false;
 controls.update();
 
 // ----------------------------------------------------------------- clock
-const clock = new ShowClock(SHOW_DURATION);
+const clock = new ShowClock(showLength());
 if (q.has('t')) clock.seek(Number(q.get('t')));
 
 declare global {
@@ -256,14 +268,14 @@ function frame(now: number) {
   else if (camMode === 'free') controls.update();
   rt.render(t);
   updateBar(t);
-  scope.drawOverview(t, SHOW_DURATION);
+  scope.drawOverview(t, showLength());
   if (!scopeEl.hidden) scope.draw(t, rt.show, rt.layout);
 }
 
 // screenshots and timings follow the music too: analyse it before rendering
 const prepared =
   shot && !q.get('music')
-    ? loadBackground(new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 }), SHOW_DURATION)
+    ? loadShowMusic(new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 }))
         .then((m) => m && followMusic(m.buffer))
         .catch((err) => console.error(err))
     : Promise.resolve();
@@ -305,9 +317,13 @@ function start() {
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const bar = $<HTMLDivElement>('bar');
 const seek = $<HTMLInputElement>('seek');
-// the range follows the show's length (index.html carries a placeholder)
-seek.max = String(SHOW_DURATION);
-for (const id of ['export-from', 'export-to']) $<HTMLInputElement>(id).max = String(SHOW_DURATION);
+// the range follows the show's length (play.html carries a placeholder)
+function syncLength() {
+  clock.duration = showLength();
+  seek.max = String(showLength());
+  for (const id of ['export-from', 'export-to']) $<HTMLInputElement>(id).max = String(showLength());
+  $('export-all').textContent = fmt(showLength());
+}
 const playBtn = $<HTMLButtonElement>('play');
 const timeEl = $<HTMLSpanElement>('time');
 const statusEl = $<HTMLSpanElement>('status');
@@ -367,8 +383,8 @@ const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).p
 let seeking = false;
 function updateBar(t: number) {
   if (!seeking) seek.value = String(t);
-  timeEl.textContent = `${fmt(t)} / ${fmt(SHOW_DURATION)}`;
-  const sec = spanAt(sectionSpans(rt.file, SHOW_DURATION), t);
+  timeEl.textContent = `${fmt(t)} / ${fmt(showLength())}`;
+  const sec = spanAt(sectionSpans(rt.file, showLength()), t);
   if (nowSec.textContent !== (sec?.name ?? '')) {
     nowSec.textContent = sec?.name ?? '';
     nowSec.style.setProperty('--sec', sec?.color ?? 'transparent');
@@ -381,13 +397,13 @@ const seekWrap = $<HTMLDivElement>('seek-wrap');
 /** Label the seek bar with the show file's sections (src/show/sections.ts). */
 function labelSections() {
   for (const el of seekWrap.querySelectorAll('.sec')) el.remove();
-  const spans = sectionSpans(rt.file, SHOW_DURATION);
+  const spans = sectionSpans(rt.file, showLength());
   for (const s of spans) {
     const el = document.createElement('span');
     el.className = 'sec';
-    el.style.left = `${(s.from / SHOW_DURATION) * 100}%`;
+    el.style.left = `${(s.from / showLength()) * 100}%`;
     // a label never runs into the next section's
-    el.style.width = `${((s.to - s.from) / SHOW_DURATION) * 100}%`;
+    el.style.width = `${((s.to - s.from) / showLength()) * 100}%`;
     el.textContent = s.name;
     seekWrap.appendChild(el);
   }
@@ -582,7 +598,7 @@ if (!shot) {
       .finally(ready);
   } else {
     const ctx = new AudioContext();
-    loadBackground(ctx, SHOW_DURATION)
+    loadShowMusic(ctx)
       .then((m) => {
         if (m) {
           clock.setBuffer(m.buffer, ctx);
@@ -601,7 +617,7 @@ if (!shot) {
       const file = (ev.target as HTMLInputElement).files?.[0];
       if (!file) return;
       $('start-status').textContent = `読み込み中：${file.name}`;
-      decodeFile(file, ctx, SHOW_DURATION)
+      decodeFile(file, ctx, showLength())
         .then((m) => {
           clock.setBuffer(m.buffer, ctx);
           followMusic(m.buffer);
@@ -633,7 +649,7 @@ const exportProgress = $<HTMLProgressElement>('export-progress');
 const exportState = $<HTMLParagraphElement>('export-state');
 const exportError = $<HTMLParagraphElement>('export-error');
 for (const n of ANGLE_NAMES) angleSel.add(new Option(ANGLES[n].label, n));
-$('export-all').textContent = fmt(SHOW_DURATION);
+syncLength();
 angleSel.add(new Option('今の視点（自由カメラ）', 'current'));
 const field = (name: string) => exportForm.elements.namedItem(name) as RadioNodeList;
 let exporting: AbortController | null = null;
@@ -649,10 +665,10 @@ function exportSettings() {
   const [width, height] = $<HTMLSelectElement>('export-size').value.split('x').map(Number);
   const fps = Number($<HTMLSelectElement>('export-fps').value);
   let from = 0;
-  let to = SHOW_DURATION;
+  let to = showLength();
   if (field('range').value === 'part') {
-    from = Math.min(Math.max(Number($<HTMLInputElement>('export-from').value) || 0, 0), SHOW_DURATION - 0.5);
-    to = Math.min(Math.max(Number($<HTMLInputElement>('export-to').value) || 0, from + 0.5), SHOW_DURATION);
+    from = Math.min(Math.max(Number($<HTMLInputElement>('export-from').value) || 0, 0), showLength() - 0.5);
+    to = Math.min(Math.max(Number($<HTMLInputElement>('export-to').value) || 0, from + 0.5), showLength());
   }
   const vr = field('format').value === 'vr180';
   const eye = Number($<HTMLSelectElement>('export-eye').value);

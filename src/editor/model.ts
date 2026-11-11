@@ -501,5 +501,13 @@ export function normaliseShow(x: unknown): ShowFile {
     // the venue it plays in (missing = the lagoon), kept across reloads and imports
     ...(typeof o.venue === 'string' && o.venue && o.venue !== 'lagoon' ? { venue: o.venue } : {}),
     ...(normaliseSections(o.sections) ? { sections: normaliseSections(o.sections) } : {}),
+    // the project's own music (docs/music-plan.md), a file in the project's folder
+    ...(normaliseMusic(o.music) ? { music: normaliseMusic(o.music) } : {}),
   };
+}
+
+function normaliseMusic(x: unknown): ShowFile['music'] {
+  const m = x as ShowFile['music'];
+  if (!m || typeof m !== 'object' || typeof m.file !== 'string' || !/^music-[0-9a-f]{12}\.[a-z0-9]+$/.test(m.file)) return undefined;
+  return { file: m.file, name: typeof m.name === 'string' && m.name ? m.name : m.file, duration: Number(m.duration) > 0 ? Number(m.duration) : 0 };
 }

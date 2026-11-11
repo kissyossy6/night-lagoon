@@ -19,7 +19,12 @@ export interface ProjectStore {
   promote(id: string, name: string): Promise<string>;
   trash(id: string): Promise<void>;
   reveal?(id: string): Promise<void>;
+  /** Keep an audio file in the project's folder; returns its stored name (ShowFile.music.file). */
+  saveMusic(id: string, file: Blob, name: string): Promise<string>;
 }
+
+/** Where a project's music file is served (the dev server's projects/ folder). */
+export const musicUrl = (projectId: string, file: string) => `/__projects/music?id=${encodeURIComponent(projectId)}&file=${encodeURIComponent(file)}`;
 
 export const isSampleId = (id: string) => id.startsWith('sample-');
 
@@ -55,6 +60,10 @@ const disk: ProjectStore = {
   },
   async reveal(id) {
     await call(`/reveal?id=${encodeURIComponent(id)}`, { method: 'POST' });
+  },
+  async saveMusic(id, file, name) {
+    const q = `id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+    return (await call<{ file: string }>(`/music?${q}`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file })).file;
   },
 };
 
@@ -139,6 +148,10 @@ const browser: ProjectStore = {
     const all = readAll();
     delete all[id];
     writeAll(all);
+  },
+  async saveMusic() {
+    // a song is too large for the browser's storage
+    throw new Error('この環境では曲を入れられません（開発サーバー npm run dev で開いてください）');
   },
 };
 

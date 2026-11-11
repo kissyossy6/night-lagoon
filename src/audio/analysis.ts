@@ -209,3 +209,52 @@ export function curveAt(c: Curve, t: number): number {
   const b = c.values[Math.min(i + 1, c.values.length - 1)] ?? a;
   return a + (b - a) * (x - i);
 }
+
+/**
+ * The beat of a piece, as a hint for the editor's BPM and offset when a
+ * project brings its own music (docs/music-plan.md 4). Each onset votes, by
+ * its strength, for where it falls in a beat of each candidate tempo; the
+ * tempo whose votes line up best wins (the length of the summed phase
+ * vector), and their mean phase gives the first beat. A beat twice as fast
+ * lines the same onsets up just as well, so ties go to the tempo nearer
+ * 120 BPM. Null when nothing lines up (free-time music, too few onsets).
+ */
+export function estimateTempo(onsets: readonly Onset[], range: [number, number] = [60, 200]): { bpm: number; offset: number; confidence: number } | null {
+  const os = onsets.filter((o) => o.strength > 0.05);
+  if (os.length < 16) return null;
+  const total = os.reduce((a, o) => a + o.strength, 0);
+  const score = (bpm: number) => {
+    const w = (2 * Math.PI * bpm) / 60;
+    let c = 0;
+    let s = 0;
+    for (const o of os) {
+      c += o.strength * Math.cos(w * o.t);
+      s += o.strength * Math.sin(w * o.t);
+    }
+    return { r: Math.hypot(c, s) / total, phase: Math.atan2(s, c) };
+  };
+  let best = { bpm: 0, r: -1 };
+  const consider = (bpm: number) => {
+    const { r } = score(bpm);
+    // within 2 %, the tempo nearer 120 BPM (not its double or half)
+    const better = r > best.r * 1.02 || (r > best.r * 0.98 && Math.abs(Math.log2(bpm / 120)) < Math.abs(Math.log2(best.bpm / 120)));
+    if (better) best = { bpm, r };
+  };
+  for (let bpm = range[0]; bpm <= range[1]; bpm += 0.5) consider(bpm);
+  const coarse = best.bpm;
+  for (let bpm = coarse - 0.5; bpm <= coarse + 0.5; bpm += 0.02) {
+    const { r } = score(bpm);
+    if (r > best.r) best = { bpm, r };
+  }
+  if (best.r < 0.2) return null;
+  const bpm = Math.round(best.bpm * 10) / 10;
+  const period = 60 / bpm;
+  const { phase } = score(bpm);
+  // the first beat: on the onsets' mean phase, at the music's first clear onset
+  // (not the grid run back to 0 s before the music starts)
+  let offset = ((phase / (2 * Math.PI)) * period) % period;
+  if (offset < 0) offset += period;
+  const start = os.find((o) => o.strength > 0.3)?.t ?? os[0].t;
+  while (offset < start - period / 2) offset += period;
+  return { bpm, offset: Math.round(offset * 1000) / 1000, confidence: best.r };
+}

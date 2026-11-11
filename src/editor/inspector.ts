@@ -46,6 +46,18 @@ export interface InspectorActions {
   playheadTime(): number;
   snapTime(t: number): number | string;
   seek(t: number): void;
+  /** The project's own music (docs/music-plan.md). */
+  music?: {
+    /** Why music cannot be picked here, or null. */
+    blocked(): string | null;
+    pick(file: File): void;
+    /** Back to the shared recording. */
+    reset(): void;
+    /** The loaded music's name (or a word for loading / none). */
+    loaded(): string;
+    /** The beat measured in the music, if any. */
+    tempo(): { bpm: number; offset: number } | null;
+  };
 }
 
 type Sync = () => void;
@@ -160,6 +172,58 @@ export class Inspector {
       el.value = get();
     });
     return el;
+  }
+
+  // ---------------------------------------------------------- music row
+
+  /** 曲: the show's music, pick another or go back to the shared one (docs/music-plan.md). */
+  private buildMusic() {
+    const st = this.state;
+    const m = this.actions.music;
+    if (!m) return;
+    const name = h('span', { className: 'music-name' });
+    name.style.overflow = 'hidden';
+    name.style.textOverflow = 'ellipsis';
+    name.style.whiteSpace = 'nowrap';
+    const file = h('input', { type: 'file', accept: 'audio/*', hidden: true });
+    file.addEventListener('change', () => {
+      const f = file.files?.[0];
+      file.value = '';
+      if (f) m.pick(f);
+    });
+    const pick = h('button', { className: 'btn', textContent: '曲を選ぶ…', type: 'button' });
+    pick.addEventListener('click', () => file.click());
+    const reset = h('button', { className: 'btn', textContent: '共通の曲に戻す', type: 'button' });
+    reset.addEventListener('click', () => m.reset());
+    const note = h('div', { className: 'note' });
+    const tempo = h('div', { className: 'actions' });
+    this.host.append(this.row('曲', name, file), h('div', { className: 'actions' }, pick, reset), tempo, note);
+    this.syncs.push(() => {
+      const own = st.file.music;
+      name.textContent = own ? own.name : '共通の曲（Rhapsody in Blue）';
+      name.title = own ? `読み込み：${m.loaded()}` : '';
+      const why = m.blocked();
+      pick.disabled = !!why;
+      reset.hidden = !own;
+      note.textContent = why ?? (own ? '曲の長さがショーの長さです。曲の後ろのキューは流れません（警告に出ます）' : '自分の曲を入れると、長さと波形がその曲になります');
+      const t = own ? m.tempo() : null;
+      tempo.replaceChildren();
+      tempo.hidden = true;
+      if (t && (Math.abs(t.bpm - st.file.bpm) > 0.05 || Math.abs(t.offset - st.file.offset) > 0.005)) {
+        const use = h('button', { className: 'btn', textContent: '入れる', type: 'button' });
+        use.addEventListener('click', () =>
+          st.mutate(
+            (f) => {
+              f.bpm = t.bpm;
+              f.offset = t.offset;
+            },
+            { structural: true, source: 'inspector' },
+          ),
+        );
+        tempo.hidden = false;
+        tempo.append(h('span', { className: 'hint', textContent: `拍の目安：${t.bpm} BPM・最初の拍 ${t.offset.toFixed(2)} 秒` }), use);
+      }
+    });
   }
 
   // ------------------------------------------------------- sections panel
@@ -1020,6 +1084,7 @@ export class Inspector {
         { key: `show:${field}`, live: true, source: 'inspector', structural: field !== 'title' },
       );
     host.append(this.row('タイトル', this.input('text', () => st.file.title, (v) => showEdit('title', v))));
+    this.buildMusic();
     host.append(this.row('BPM', this.input('number', () => String(st.file.bpm), (v) => showEdit('bpm', v), { step: 1 })));
     host.append(this.row('拍子', this.input('number', () => String(st.file.beatsPerBar), (v) => showEdit('beatsPerBar', v), { step: 1 }), h('span', { className: 'hint', textContent: '拍/小節' })));
     host.append(this.row('オフセット', this.input('number', () => String(st.file.offset), (v) => showEdit('offset', v), { step: 0.01 }), h('span', { className: 'hint', textContent: '秒 (1小節目の前)' })));

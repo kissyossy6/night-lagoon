@@ -101,7 +101,8 @@ npm run dev
 
 ## 音楽
 
-- 既存の音源をそのまま流す。`public/music/background.mp3`（.m4a / .ogg / .wav も可）を置くと、ショーとエディタが読み込む。ショーの開始画面の「音楽ファイルを選ぶ」でも選べる（その場限り）
+- **プロジェクトごとの曲**：エディタの「ショー設定」の「曲を選ぶ…」で、そのプロジェクトに自分の曲を入れられる。曲は `projects/<id>/music-<hash>.<拡張子>` に置かれ（GitHub には入らない）、ショーの長さは曲の長さ、区間は「全体」から、拍の目安（BPM・最初の拍）を曲から測る。水幕は場面を選ぶまで黒。設計は `docs/music-plan.md`、確認は `node scripts/music-check.mjs`
+- 曲を入れていないプロジェクトと見本は、共通の曲を流す。`public/music/background.mp3`（.m4a / .ogg / .wav も可）を置くと、ショーとエディタが読み込む。ショーの開始画面の「音楽ファイルを選ぶ」でも選べる（その場限り）
 - 曲のファイルは GitHub に入れていない。`npm run music`（`scripts/get-music.mjs`）が元の録音を取ってきて作る。録音がもう手元にあれば `npm run music -- --source <ファイル.oga>`、作り直すときは `npm run music -- --force`。音量の上げ下げは `scripts/music/gain.json`（作ったときの曲から測った値）、取ってきた録音は `.cache/music/` に残る
 - 時計は音源の再生位置に合わせて進む
 - 読み込んだ音源は、その場で波形を分析する（`src/audio/analysis.ts`、約0.8秒）。低音・中音・高音の音量と、音の立ち上がり（オンセット）を取り出し、振り付けを作り直す：グリッドの帯の高さが音量に合わせて上下し（`follow` マクロ）、強い立ち上がりで手前の帯が跳ね、チェイサーが走り、ウィップが隊形を変える。ガイザーは一番近い立ち上がりに合わせる
@@ -170,3 +171,5 @@ npm run dev
 | `node scripts/audio-check.mjs` | 音楽の長さ・ピーク・セクションごとの音量 |
 | `node scripts/projection-check.mjs` | 水幕の映像のコンタクトシート |
 | `node scripts/editor-check.mjs` | エディタの操作確認 |
+| `node scripts/music-check.mjs` | プロジェクトごとの曲：入れる・長さ・拍の目安・警告・⌘Z・本番再生・水幕が黒 |
+| `node scripts/venue-race-check.mjs` | 曲の解析前に会場を切り替えても戻らない |

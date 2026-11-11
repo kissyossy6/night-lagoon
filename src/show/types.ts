@@ -147,6 +147,22 @@ export interface ShowFile {
   cues: Cue[];
   /** Named stretches for the timeline and the player (src/show/sections.ts); missing means the song's form. */
   sections?: ShowSection[];
+  /**
+   * The project's own music (docs/music-plan.md), kept in its folder
+   * (projects/<id>/<file>). Missing: the shared recording (public/music/background.*,
+   * Rhapsody in Blue), its sections and its story on the screen.
+   */
+  music?: ShowMusic;
+}
+
+/** A project's own music file. */
+export interface ShowMusic {
+  /** The stored file's name in the project's folder (music-<hash>.<ext>). */
+  file: string;
+  /** The name it was picked with, for people. */
+  name: string;
+  /** Its length in seconds. */
+  duration: number;
 }
 
 /** One named stretch of a show: starts at `t` seconds, ends where the next one starts. */

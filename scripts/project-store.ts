@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
@@ -9,6 +10,9 @@ import type { Plugin } from 'vite';
  *
  *   projects/<id>/project.json   name, dates, the show (src/projects/types.ts)
  *   projects/<id>/thumb.jpg      the list's picture (taken from the editor's 3D)
+ *   projects/<id>/music-<hash>.<ext>  the project's own music (docs/music-plan.md);
+ *                                the show names the one it plays (ShowFile.music).
+ *                                Old ones stay, so undoing a change of music finds its file
  *
  * Folders named sample-* are the samples: tracked by git (.gitignore keeps
  * every other project out), read-only here, listed by the page itself
@@ -17,9 +21,11 @@ import type { Plugin } from 'vite';
  *   GET  /__projects/list             → summaries of your projects (no samples)
  *   GET  /__projects/get?id=          → project.json
  *   GET  /__projects/thumb?id=        → thumb.jpg (samples too)
+ *   GET  /__projects/music?id=&file=  → that music file
  *   POST /__projects/create           body { name, generate?, from?, show? } → project
  *   POST /__projects/save?id=         body project.json (the id must match)
  *   POST /__projects/thumb?id=        body image/jpeg
+ *   POST /__projects/music?id=&name=  body the audio file → { file } (its name in the folder)
  *   POST /__projects/duplicate?id=    body { name } → project (from a sample too)
  *   POST /__projects/promote?id=      body { name } → the new sample's id
  *   POST /__projects/trash?id=
@@ -27,6 +33,9 @@ import type { Plugin } from 'vite';
  */
 
 const ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/** A stored music file's name: music-<hash>.<ext>. */
+const MUSIC_FILE = /^music-[0-9a-f]{12}\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/;
+const MUSIC_TYPE: Record<string, string> = { mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg', wav: 'audio/wav', flac: 'audio/flac', webm: 'audio/webm' };
 const isSample = (id: string) => id.startsWith('sample-');
 
 interface Project {
@@ -42,6 +51,12 @@ export function projectStore(root: string): Plugin {
   const dir = resolve(root, 'projects');
   const folder = (id: string) => join(dir, id);
   const exists = (p: string) => stat(p).then(() => true, () => false);
+  /** Copy what a project keeps beside its project.json: the picture and the music. */
+  async function copyMedia(from: string, to: string) {
+    for (const name of await readdir(folder(from)).catch(() => [] as string[])) {
+      if (name === 'thumb.jpg' || MUSIC_FILE.test(name)) await cp(join(folder(from), name), join(folder(to), name));
+    }
+  }
 
   function checkId(id: string | null, { sample = true } = {}): string {
     if (!id || !ID.test(id)) throw new HttpError(400, 'bad id');
@@ -117,6 +132,19 @@ export function projectStore(root: string): Plugin {
           return send(res, 404, { error: 'no thumbnail' });
         }
       }
+      if (path === '/music') {
+        const file = q.get('file') ?? '';
+        if (!MUSIC_FILE.test(file)) throw new HttpError(400, 'bad file');
+        try {
+          const data = await readFile(join(folder(checkId(q.get('id'))), file));
+          res.setHeader('Content-Type', MUSIC_TYPE[file.split('.').pop()!]);
+          // the name is its content's hash: it never changes
+          res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+          return res.end(data);
+        } catch {
+          return send(res, 404, { error: 'no such music' });
+        }
+      }
       return send(res, 404, { error: 'unknown' });
     }
     if (req.method !== 'POST') return send(res, 405, { error: 'GET or POST' });
@@ -145,6 +173,17 @@ export function projectStore(root: string): Plugin {
         await writeFile(join(folder(id), 'thumb.jpg'), await raw(req));
         return send(res, 200, { ok: true });
       }
+      case '/music': {
+        const id = checkId(q.get('id'), { sample: false });
+        if (!(await exists(folder(id)))) throw new HttpError(404, 'no such project');
+        const ext = (q.get('name') ?? '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? '';
+        if (!MUSIC_TYPE[ext]) throw new HttpError(400, `この形式の曲は入れられません（${Object.keys(MUSIC_TYPE).join('・')}）`);
+        const data = await raw(req, 200e6);
+        if (!data.length) throw new HttpError(400, 'empty file');
+        const file = `music-${createHash('sha1').update(data).digest('hex').slice(0, 12)}.${ext}`;
+        if (!(await exists(join(folder(id), file)))) await writeFile(join(folder(id), file), data);
+        return send(res, 200, { file });
+      }
       case '/duplicate': {
         const src = checkId(q.get('id'));
         const body = (await json(req)) as { name?: string };
@@ -156,7 +195,7 @@ export function projectStore(root: string): Plugin {
           delete p.description;
         }
         await write(p);
-        if (await exists(join(folder(src), 'thumb.jpg'))) await cp(join(folder(src), 'thumb.jpg'), join(folder(p.id), 'thumb.jpg'));
+        await copyMedia(src, p.id);
         return send(res, 200, p);
       }
       case '/promote': {
@@ -168,7 +207,7 @@ export function projectStore(root: string): Plugin {
         const p: Project = { ...from, id, name: body.name || from.name, created: now, updated: now, sample: true };
         delete p.from;
         await write(p);
-        if (await exists(join(folder(src), 'thumb.jpg'))) await cp(join(folder(src), 'thumb.jpg'), join(folder(id), 'thumb.jpg'));
+        await copyMedia(src, id);
         return send(res, 200, { id });
       }
       case '/trash': {
@@ -210,13 +249,13 @@ class HttpError extends Error {
   }
 }
 
-function raw(req: IncomingMessage): Promise<Buffer> {
+function raw(req: IncomingMessage, limit = 50e6): Promise<Buffer> {
   return new Promise((ok, fail) => {
     const parts: Buffer[] = [];
     let n = 0;
     req.on('data', (d: Buffer) => {
       n += d.length;
-      if (n > 50e6) fail(new HttpError(413, 'too large'));
+      if (n > limit) fail(new HttpError(413, 'too large'));
       else parts.push(d);
     });
     req.on('end', () => ok(Buffer.concat(parts)));
