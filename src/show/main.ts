@@ -119,6 +119,10 @@ function loadShowFile(): ShowFile {
 /** Waveform analysis of the music once it is loaded (src/audio/analysis.ts). */
 let music: ReturnType<typeof analyseMusic> | null = null;
 rt.setShow(loadShow());
+// a show written for a smaller venue (its file's venue: a project, the
+// editor's show) is seen from that venue's seats, as with ?venue; from the
+// lake's seats a desk is out of sight (2026-11-12)
+if (!venueId) useVenueAngles(rt.venue);
 /** The show's length: its file's (a project on its own music runs that music's length, docs/music-plan.md). */
 const showLength = () => rt.file.duration;
 /**

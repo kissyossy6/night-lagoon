@@ -17,6 +17,9 @@ import { EditorView, TABS, folderOfLane, type TabId } from './view';
 import { WarningsPanel } from './warnings';
 import { getVenue, loadMyVenues, VENUE_DOCS } from '../venues';
 import { cueReach } from '../venues/cues';
+import { refitCues } from '../venues/refit';
+import { lanesOf } from '../fixtures';
+import type { Venue } from '../venues/types';
 import { Preview } from './preview';
 import { EditorState, MAX_HISTORY } from './state';
 import { Timeline } from './timeline';
@@ -905,11 +908,49 @@ function switchVenue(id: string) {
     { structural: true, source: 'venue' },
   );
   const r = cueReach(state.file, before, after);
+  if ((r.none || r.part) && askRefit(before, after, r.none, r.part)) return;
   toast(
     `会場を「${after.name}」にしました（前：${before.name}）。` +
       (r.none || r.part ? `動かないキュー ${r.none}・一部だけ ${r.part}（${r.all} のうち）。` : 'どのキューも前と同じ数の台を狙えます。') +
       '⌘Z で戻せます',
   );
+}
+
+/**
+ * After a venue switch that leaves cues with nothing (or less) to move: offer
+ * to aim them again at this venue's fixtures (src/venues/refit.ts). Its own
+ * step, so ⌘Z takes back the refit first and the switch after. True when done.
+ */
+function askRefit(before: Venue, after: Venue, none: number, part: number): boolean {
+  const ok = window.confirm(
+    `「${after.name}」では、動かないキューが ${none}、一部だけ動くキューが ${part} あります。\n\n` +
+      'この会場の機材に組み替えますか？\n' +
+      '・時刻・色・暗転はそのまま。狙う台だけを、同じ場所（左・真ん中・前…）の台に変えます\n' +
+      '・無い機材は近い種類が代わります。ただし、その台が元のショーで動いている間は重ねません\n' +
+      '・水幕・花火など代わりの無いものは、灰色の行に残ります\n\n' +
+      '⌘Z で戻せます',
+  );
+  if (!ok) return false;
+  const { cues, report } = refitCues(state.file, before, after);
+  if (!report.changed) {
+    toast(`会場を「${after.name}」にしました。組み替えられるキューはありませんでした（⌘Z で会場を戻せます）`);
+    return true;
+  }
+  state.mutate(
+    (f) => {
+      f.cues = cues;
+    },
+    { structural: true, source: 'venue' },
+  );
+  const names = [...lanesOf(before), ...lanesOf(after)];
+  const laneName = (g: string) => names.find((l) => l.group === g)?.name ?? g;
+  const swaps = report.swaps.slice(0, 3).map((s) => `${laneName(s.from)}→${laneName(s.to)}`);
+  toast(
+    `会場を「${after.name}」にして、${report.changed} 個のキューを組み替えました。動かないキュー ${report.noneBefore} → ${report.noneAfter}` +
+      (swaps.length ? `（代わり：${swaps.join('・')}）` : '') +
+      '。⌘Z で組み替えを戻せます',
+  );
+  return true;
 }
 venueBtn.addEventListener('click', (e) => {
   e.stopPropagation();
