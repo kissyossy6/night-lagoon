@@ -28,6 +28,7 @@ import {
   startOf,
 } from './model';
 import type { ChangeEvent, EditorState } from './state';
+import { MOVES } from './moves';
 import { SECTION_PALETTE, sectionSpans, sectionsOf } from '../show/sections';
 import { knownVideos, refreshVideos, uploadVideo, videoLength, videoName } from './videos';
 
@@ -46,6 +47,11 @@ export interface InspectorActions {
   playheadTime(): number;
   snapTime(t: number): number | string;
   seek(t: number): void;
+  /** 動きの型 (src/editor/moves.ts): why one cannot go here (null when it can), and add it. */
+  moves?: {
+    why(id: string): string | null;
+    add(id: string): void;
+  };
   /** The project's own music (docs/music-plan.md). */
   music?: {
     /** Why music cannot be picked here, or null. */
@@ -174,6 +180,33 @@ export class Inspector {
       el.value = get();
     });
     return el;
+  }
+
+  // ---------------------------------------------------------- moves
+
+  /** 動きの型: one button per move; it goes on the selected cue's fixtures, else on the fixtures it suits. */
+  private buildMoves() {
+    const moves = this.actions.moves;
+    if (!moves) return;
+    this.section('動きの型');
+    const hint = h('div', { className: 'sub', textContent: '' });
+    const grid = h('div', { className: 'moves' });
+    for (const m of MOVES) {
+      const b = h('button', { className: 'btn', textContent: m.ja });
+      b.dataset.move = m.id;
+      b.addEventListener('click', () => moves.add(m.id));
+      grid.append(b);
+      this.syncs.push(() => {
+        const why = moves.why(m.id);
+        b.disabled = why !== null;
+        b.title = why ?? m.note;
+      });
+    }
+    this.syncs.push(() => {
+      const c = this.cue;
+      hint.textContent = c && !c.fire && !c.clip ? '押すと、選んだキューと同じ台に、再生位置の拍で足します。' : '押すと、再生位置の拍に足します（台は動きに合うもの。キューを選ぶとその台に）。';
+    });
+    this.host.append(hint, grid);
   }
 
   // ---------------------------------------------------------- music row
@@ -324,6 +357,8 @@ export class Inspector {
       speedNote.style.display = mine.length ? '' : 'none';
       speedNote.textContent = mine.map((c) => `△ ${CHECK_KINDS[c.kind].title}${c.text ? `（${c.text}）` : ''}：${CHECK_KINDS[c.kind].note}`).join('\n');
     });
+
+    this.buildMoves();
 
     // --- basics
     this.section('基本');
@@ -1081,6 +1116,8 @@ export class Inspector {
     const host = this.host;
     host.append(h('h2', { textContent: 'ショー設定' }));
     host.append(h('div', { className: 'sub', textContent: 'キューを選択すると、ここで編集できます。' }));
+    this.buildMoves();
+    this.section('ショー');
     const showEdit = (field: keyof ShowFile, v: string) =>
       st.mutate(
         (f) => {

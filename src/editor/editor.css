@@ -459,3 +459,7 @@ textarea.json {
 #an-state .on { color: var(--c-ok); }
 #an-state .bad { color: var(--c-danger-text); }
 .btn.an-chip { border-color: var(--c-primary-line); color: var(--c-primary-text); background: var(--c-primary-bg); }
+
+/* 動きの型 (src/editor/moves.ts): the moves as buttons, two or three to a row */
+.moves { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; margin: 4px 0 6px; }
+.moves .btn { padding: 0 4px; font-size: var(--fs-sm); line-height: 1.15; white-space: normal; height: auto; min-height: var(--ctl-h); }

@@ -10,7 +10,8 @@ import type { Cue, ShowFile } from '../show/types';
 import { setupControlExport } from './control-export';
 import { Inspector } from './inspector';
 import { barBeatLabel, clockLabel, clone, cueLabel, emptyShow, encodeTime, normaliseShow, secPerBar, secPerBeat, snapToBeat, startOf, useVenue, LANES, LAYOUT, laneOf } from './model';
-import { compileShow, resolveTarget, CHANNELS, type CompiledShow } from '../show/cues';
+import { compileShow, evaluate, resolveTarget, CH, CHANNELS, type CompiledShow } from '../show/cues';
+import { MOVES, moveTarget } from './moves';
 import { resolveTubes } from '../pyro/schedule';
 import { checkShow, pictureMap, type Check } from '../show/checks';
 import { EditorView, TABS, folderOfLane, type TabId } from './view';
@@ -223,6 +224,15 @@ const actions = {
   playheadTime: () => transport.now(),
   snapTime: (t: number) => encodeTime(snapToBeat(t, state.file), state.file),
   seek: (t: number) => transport.seek(t),
+  moves: {
+    why: (id: string) => {
+      const m = MOVES.find((x) => x.id === id);
+      if (!m) return '不明な動き';
+      const r = moveTarget(m, state.file.cues[state.primary], LAYOUT);
+      return 'why' in r ? r.why : null;
+    },
+    add: (id: string) => addMove(id),
+  },
   music: {
     blocked: () => (project && store && !isSampleId(project.id) ? null : 'プロジェクトとして開くと、曲を入れられます'),
     pick: (file: File) => void pickMusic(file),
@@ -554,6 +564,45 @@ if (project && 'BroadcastChannel' in window) {
     if (!e.data.reply) ch.postMessage({ id: project.id, from: me, reply: true });
   };
   ch.postMessage({ id: project.id, from: me });
+}
+
+// ---------------------------------------------------------------- moves
+
+/**
+ * 動きの型 (src/editor/moves.ts): one cue of the move on the beat nearest the
+ * playhead. A move that only turns heads or colours brings the water on with
+ * it when its fixtures are dark there (a sway with no water shows nothing).
+ */
+function addMove(id: string) {
+  const m = MOVES.find((x) => x.id === id);
+  if (!m) return;
+  const r = moveTarget(m, state.file.cues[state.primary], LAYOUT);
+  if ('why' in r) {
+    toast(r.why);
+    return;
+  }
+  const f = state.file;
+  const t = Math.min(f.duration, Math.max(0, snapToBeat(transport.now(), f)));
+  const at = encodeTime(Math.round(t * 1000) / 1000, f);
+  const add: Cue[] = [];
+  if (m.needsWater) {
+    const show = compileShow(f, LAYOUT);
+    const fx = resolveTarget(r.target, LAYOUT).filter((i) => i < LAYOUT.fixtures.length);
+    const wet = fx.some((i) => evaluate(show, i, CH.pressure, t + 0.3) > 0.05);
+    if (!wet) add.push({ t: at, target: r.target, set: { pressure: 0.8 }, dur: 0.5, label: `${m.ja}の水` });
+  }
+  add.push({ t: at, target: r.target, ...m.cue(), label: m.ja });
+  const first = f.cues.length;
+  state.mutate(
+    (file) => {
+      file.cues.push(...add);
+    },
+    { structural: true, source: 'inspector' },
+  );
+  const idx = add.map((_, k) => first + k);
+  state.setSelection(idx, idx[idx.length - 1]);
+  const lane = LANES[laneOf(add[add.length - 1])]?.name ?? r.target;
+  toast(`「${m.ja}」を ${barBeatLabel(t, f)}・${lane} に足しました${add.length > 1 ? '（水も出します）' : ''}。右の「マクロ」で細かく直せます`);
 }
 
 // ---------------------------------------------------------------- copy / paste
