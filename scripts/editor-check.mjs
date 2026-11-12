@@ -166,6 +166,81 @@ await page.evaluate(() => window.__editor.transport.seek(20));
 await page.waitForTimeout(300);
 await page.screenshot({ path: `${out}/editor-macro.png` });
 
+// ------------------------------------------------ ⌘C / ⌘V and ⌘X (the clipboard)
+{
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:5199' }).catch(() => {});
+  const pick = await page.evaluate(() => {
+    const { state } = window.__editor;
+    const f = state.file;
+    const at = (t) => {
+      if (typeof t === 'number') return t;
+      const [bar, beat] = String(t).split(':').map(Number);
+      return f.offset + ((bar - 1) * f.beatsPerBar + (beat - 1)) * (60 / f.bpm);
+    };
+    // two plain cues of different times in the first minute
+    const idx = [];
+    for (let i = 0; i < f.cues.length && idx.length < 2; i++) {
+      const c = f.cues[i];
+      if (c.macro || c.fire) continue;
+      const t = at(c.t);
+      if (Number.isFinite(t) && t > 5 && (!idx.length || Math.abs(t - at(f.cues[idx[0]].t)) > 0.5)) idx.push(i);
+    }
+    state.setSelection(idx, idx[0]);
+    window.__editor.transport.seek(100);
+    document.activeElement instanceof HTMLElement && document.activeElement.blur();
+    return { idx, n: f.cues.length, ts: idx.map((i) => at(f.cues[i].t)), targets: idx.map((i) => f.cues[i].target) };
+  });
+  expect(pick.idx.length === 2, `picked two cues (${pick.ts.join(', ')})`);
+  await page.keyboard.press('ControlOrMeta+c');
+  await page.keyboard.press('ControlOrMeta+v');
+  await page.waitForTimeout(150);
+  const pasted = await page.evaluate(() => {
+    const { state } = window.__editor;
+    const f = state.file;
+    const sel = state.selected();
+    const at = (i) => {
+      const t = f.cues[i].t;
+      if (typeof t === 'number') return t;
+      const [bar, beat] = t.split(':').map(Number);
+      return f.offset + ((bar - 1) * f.beatsPerBar + (beat - 1)) * (60 / f.bpm);
+    };
+    return { n: f.cues.length, sel, ts: sel.map(at), targets: sel.map((i) => f.cues[i].target), spb: 60 / f.bpm, offset: f.offset };
+  });
+  const gap0 = Math.abs(pick.ts[1] - pick.ts[0]);
+  const gap1 = Math.abs(pasted.ts[1] - pasted.ts[0]);
+  expect(pasted.n === pick.n + 2, `⌘C ⌘V pasted two cues (${pick.n} -> ${pasted.n})`);
+  const first = Math.min(...pasted.ts);
+  const onBeat = Math.abs(((first - pasted.offset) / pasted.spb) % 1) < 1e-3 || Math.abs(((first - pasted.offset) / pasted.spb) % 1) > 1 - 1e-3;
+  expect(Math.abs(first - 100) <= pasted.spb && onBeat, `pasted on the beat near the playhead (${first.toFixed(3)} s)`);
+  expect(Math.abs(gap0 - gap1) < 0.002 && pasted.targets.sort().join() === pick.targets.sort().join(), `kept the gap (${gap0.toFixed(3)} / ${gap1.toFixed(3)} s) and the targets`);
+  await page.keyboard.press('ControlOrMeta+z');
+  await page.waitForTimeout(100);
+  // ⌘X: the first pick goes, ⌘V brings it back at the playhead
+  await page.evaluate((i) => window.__editor.state.setSelection([i], i), pick.idx[0]);
+  await page.keyboard.press('ControlOrMeta+x');
+  await page.waitForTimeout(100);
+  const afterCut = await page.evaluate(() => window.__editor.state.file.cues.length);
+  expect(afterCut === pick.n - 1, `⌘X removed the cue (${pick.n} -> ${afterCut})`);
+  await page.keyboard.press('ControlOrMeta+v');
+  await page.waitForTimeout(100);
+  expect((await page.evaluate(() => window.__editor.state.file.cues.length)) === pick.n, '⌘V put it back');
+  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press('ControlOrMeta+z');
+  await page.waitForTimeout(100);
+  // a text field keeps its own paste
+  const typed = await page.evaluate(() => {
+    const inp = document.createElement('input');
+    document.body.append(inp);
+    inp.focus();
+    return window.__editor.state.file.cues.length;
+  });
+  await page.keyboard.press('ControlOrMeta+v');
+  await page.waitForTimeout(100);
+  expect((await page.evaluate(() => window.__editor.state.file.cues.length)) === typed, 'no cues pasted while typing in a field');
+  await page.evaluate(() => document.querySelector('body > input:last-child')?.remove());
+  expect((await page.evaluate(() => window.__editor.state.file.cues.length)) === pick.n, `undo restored the count (${pick.n})`);
+}
+
 // autosave
 const saved = await page.evaluate(() => {
   try {

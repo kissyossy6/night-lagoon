@@ -6,7 +6,7 @@ import { buildDraft } from '../show/draft';
 import { setCurves } from '../show/cues';
 import type { Quality } from '../show/layout';
 import { sectionSpans, spanAt } from '../show/sections';
-import type { ShowFile } from '../show/types';
+import type { Cue, ShowFile } from '../show/types';
 import { setupControlExport } from './control-export';
 import { Inspector } from './inspector';
 import { barBeatLabel, clockLabel, clone, cueLabel, emptyShow, encodeTime, normaliseShow, secPerBar, secPerBeat, snapToBeat, startOf, useVenue, LANES, LAYOUT, laneOf } from './model';
@@ -250,7 +250,13 @@ transport.onChange(() => {
 function setStatus(id: string, text: string, kind: '' | 'ok' | 'warn' = '') {
   const el = $(id);
   el.textContent = text;
+  el.title = text; // the bar may shorten it
   el.className = `status ${kind}`;
+}
+
+/** The bar's ▾ menus open one at a time. */
+function closeMenus() {
+  document.querySelectorAll<HTMLElement>('.menu-pop').forEach((m) => (m.hidden = true));
 }
 
 let toastTimer = 0;
@@ -345,9 +351,22 @@ const pop = $('file-pop');
 }
 $('file-btn').addEventListener('click', (e) => {
   e.stopPropagation();
-  pop.hidden = !pop.hidden;
+  const was = pop.hidden;
+  closeMenus();
+  pop.hidden = !was;
 });
 document.addEventListener('click', () => (pop.hidden = true));
+// Esc closes an open menu (and only that: the selection stays)
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key !== 'Escape' || !document.querySelector('.menu-pop:not([hidden])')) return;
+    closeMenus();
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  },
+  true,
+);
 
 function exportJson() {
   const blob = new Blob([JSON.stringify(state.file, null, 1)], { type: 'application/json' });
@@ -533,6 +552,92 @@ if (project && 'BroadcastChannel' in window) {
   };
   ch.postMessage({ id: project.id, from: me });
 }
+
+// ---------------------------------------------------------------- copy / paste
+
+/**
+ * ⌘C / ⌘X / ⌘V for cues. The copied cues keep their timing relative to the
+ * first one and go to the system clipboard as JSON, so they can be pasted into
+ * another project (or another tab). ⌘V puts the first one on the beat nearest
+ * the playhead. Text fields keep their own copy and paste.
+ */
+const CLIP_KIND = 'night-lagoon/cues';
+interface CueClip {
+  kind: typeof CLIP_KIND;
+  venue: string;
+  cues: { at: number; cue: Cue }[];
+}
+/** The last copy, for a browser that does not hand over the clipboard. */
+let lastClip: CueClip | null = null;
+
+function cueClip(): CueClip | null {
+  const f = state.file;
+  const sel = state.selected().filter((i) => Number.isFinite(startOf(f.cues[i], f)));
+  if (!sel.length) return null;
+  const t0 = Math.min(...sel.map((i) => startOf(f.cues[i], f)));
+  const cues = sel
+    .map((i) => ({ at: Math.round((startOf(f.cues[i], f) - t0) * 1000) / 1000, cue: clone(f.cues[i]) }))
+    .sort((a, b) => a.at - b.at);
+  return { kind: CLIP_KIND, venue: f.venue ?? 'lagoon', cues };
+}
+
+function readClip(text: string | undefined): CueClip | null {
+  if (!text) return null;
+  try {
+    const c = JSON.parse(text) as CueClip;
+    if (c?.kind === CLIP_KIND && Array.isArray(c.cues) && c.cues.every((x) => typeof x.at === 'number' && x.cue && typeof x.cue.target === 'string')) return c;
+  } catch {
+    /* not ours */
+  }
+  return null;
+}
+
+function pasteCues(c: CueClip) {
+  const f = state.file;
+  const at = Math.max(0, snapToBeat(transport.now(), f));
+  const added: number[] = [];
+  state.mutate(
+    (file) => {
+      for (const { at: d, cue } of c.cues) {
+        const n = clone(cue);
+        n.t = encodeTime(Math.round((at + d) * 1000) / 1000, file);
+        file.cues.push(n);
+        added.push(file.cues.length - 1);
+      }
+    },
+    { structural: true },
+  );
+  state.setSelection(added, added[0]);
+  const missing = added.filter((i) => LANES[laneOf(state.file.cues[i])]?.missing).length;
+  const past = c.cues.filter((x) => at + x.at > state.file.duration).length;
+  const notes = [missing ? `この会場で動かないもの ${missing} 個` : '', past ? `曲の後ろにはみ出したもの ${past} 個` : ''].filter(Boolean);
+  toast(`${added.length} 個のキューを ${barBeatLabel(at, f)} に貼り付けました${notes.length ? `（${notes.join('・')}は警告に出ます）` : ''}`);
+}
+
+function onCopy(e: ClipboardEvent, cut: boolean) {
+  if (isTyping(e.target) || isTyping(document.activeElement)) return;
+  if (window.getSelection()?.toString()) return; // text picked on the page: the browser's own copy
+  const c = cueClip();
+  if (!c) return;
+  e.preventDefault();
+  e.clipboardData?.setData('text/plain', JSON.stringify(c));
+  lastClip = c;
+  if (cut) {
+    const sel = state.selected();
+    state.remove(sel);
+    toast(`${c.cues.length} 個のキューを切り取りました（⌘/Ctrl+V で再生位置に貼り付け）`);
+  } else toast(`${c.cues.length} 個のキューをコピーしました（⌘/Ctrl+V で再生位置に貼り付け）`);
+}
+document.addEventListener('copy', (e) => onCopy(e, false));
+document.addEventListener('cut', (e) => onCopy(e, true));
+document.addEventListener('paste', (e) => {
+  if (isTyping(e.target) || isTyping(document.activeElement)) return;
+  const text = e.clipboardData?.getData('text/plain');
+  const c = readClip(text) ?? (text ? null : lastClip);
+  if (!c) return;
+  e.preventDefault();
+  pasteCues(c);
+});
 
 // ---------------------------------------------------------------- keyboard
 
@@ -809,7 +914,7 @@ function switchVenue(id: string) {
 venueBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const was = venuePop.hidden;
-  document.querySelectorAll<HTMLElement>('.menu-pop').forEach((m) => (m.hidden = true));
+  closeMenus();
   if (!was) return;
   const cur = venueId();
   const item = (id: string, name: string) => {
