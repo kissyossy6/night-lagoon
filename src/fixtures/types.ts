@@ -33,6 +33,21 @@ export interface NozzleUse {
   strands: number;
   /** For shots: how long one burst lasts at most (s). */
   burst?: number;
+  /**
+   * Whether the head turns, so pan and tilt lean the water (and the drawn
+   * head). Unset: the nozzle type's (headTurns in core/nozzles.ts: whips and
+   * fans). A kind whose real head is fixed says false (the garden's small
+   * fan). Everything that asks "does it lean" reads Fixture.turns, made from
+   * this one place (2026-11-12).
+   */
+  turns?: boolean;
+  /**
+   * How the drawn body stands (src/show/bodies.ts): 'nozzle' (unset) a
+   * nozzle on a platform under the water, its head just out of the water,
+   * shaped by the nozzle type; 'pump' a small desk pump with LED beads;
+   * 'floor' under a floor grate, seen through its holes.
+   */
+  body?: 'nozzle' | 'pump' | 'floor';
 }
 
 export interface Placement {

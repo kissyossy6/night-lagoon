@@ -397,7 +397,7 @@ function compileRaw(file: ShowFile, layout: Layout, projector: boolean): Compile
     const ch = k % nCh;
     const def = DEFAULTS[ch];
     const fixture = layout.fixtures[Math.floor(k / nCh)];
-    const head = (ch === CH.pan || ch === CH.tilt) && (fixture?.type === 'oscillating' || fixture?.type === 'fan');
+    const head = (ch === CH.pan || ch === CH.tilt) && !!fixture?.turns;
     const valve = ch === CH.pressure && (fixture?.type === 'ring' || fixture?.type === 'fan');
     // a projector's picture fades as fast as it is told (not an LED driver)
     const led = ch >= CH.r && !(layout.projector.length && Math.floor(k / nCh) >= layout.projector[0].index);

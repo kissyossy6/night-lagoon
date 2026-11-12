@@ -1,4 +1,4 @@
-import { TYPE_ID, flightTime, type NozzleSpec, type NozzleType } from '../core/nozzles';
+import { TYPE_ID, flightTime, headTurns, type NozzleSpec, type NozzleType } from '../core/nozzles';
 import { NOZZLES, kind } from '../fixtures';
 import { LAGOON, type Vec3, type Venue } from '../venues';
 
@@ -11,7 +11,16 @@ import { LAGOON, type Vec3, type Venue } from '../venues';
 export interface Fixture {
   index: number;
   group: string;
+  /** The kind of fixture (src/fixtures/, e.g. 'grid', 'desk-jet'). */
+  kind: string;
   type: NozzleType;
+  /**
+   * Whether the head turns: pan and tilt lean the water and the drawn head.
+   * From the kind (NozzleUse.turns, else the type's headTurns); every reader
+   * (the water, the haze, the editor's outline and picking, the head-speed
+   * limit, refitting, the drawn bodies) asks this, not the type.
+   */
+  turns: boolean;
   spec: NozzleSpec;
   position: [number, number, number];
   /** Particle slots (spray) and mist sprites given to this fixture. */
@@ -163,7 +172,9 @@ export function buildLayout(venue: Venue = LAGOON, quality: Quality = 'high'): L
       fixtures.push({
         index,
         group: g.name,
+        kind: g.kind,
         type: n.type,
+        turns: n.turns ?? headTurns(n.type),
         spec,
         position: pos,
         spray: Math.max(16, Math.round(n.spray * scale)),

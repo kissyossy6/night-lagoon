@@ -41,8 +41,6 @@ export const MOVES: Move[] = [
   { id: 'rainbow', ja: '虹', note: '並び順に色を割り振って虹にする', needsWater: true, cue: () => ({ macro: 'rainbow', args: { hue: 0, span: 1 } }) },
 ];
 
-const HEADS: NozzleType[] = ['oscillating', 'fan'];
-
 /** The nozzle kinds a target aims at (screens and projector zones left out). */
 function kindsOf(target: string, l: Layout): NozzleType[] {
   return [...new Set(resolveTarget(target, l).filter((i) => i < l.fixtures.length).map((i) => l.fixtures[i].type))];
@@ -52,7 +50,8 @@ function kindsOf(target: string, l: Layout): NozzleType[] {
 export function cannot(m: Move, target: string, l: Layout): string | null {
   const kinds = kindsOf(target, l);
   if (!kinds.length) return '水の機材ではありません';
-  if (m.head && !kinds.some((k) => HEADS.includes(k))) return '首の動く機材（ウィップ・ファン）で使えます';
+  // a head that turns (Fixture.turns: the whips and the lagoon's fans, not the garden's fixed fan)
+  if (m.head && !resolveTarget(target, l).some((i) => i < l.fixtures.length && l.fixtures[i].turns)) return '首の動く機材（ウィップ・ファン）で使えます';
   if (m.ring && !kinds.includes('ring')) return '花（フラワー）で使えます';
   return null;
 }

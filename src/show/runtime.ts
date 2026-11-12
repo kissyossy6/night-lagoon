@@ -9,6 +9,7 @@ import { compileShow, screenAt, CH, type CompiledShow, type ScreenFrame } from '
 import { ParamHistory } from './history';
 import { PROJECTOR_MAX } from './projector';
 import { JetField } from './jetfield';
+import { FixtureBodies } from './bodies';
 import { QUALITY_SCALE, buildLayout, zoneAt, zonesOfScreen, type Layout, type Quality, type ScreenUnit } from './layout';
 import type { ShowFile } from './types';
 import { getVenue, type Venue } from '../venues';
@@ -46,6 +47,9 @@ export class ShowRuntime {
   layout!: Layout;
   history!: ParamHistory;
   jets!: JetField;
+  /** The fixtures' bodies (bodies.ts); shown unless setFixtures(false). */
+  bodies!: FixtureBodies;
+  private bodiesOn = true;
   show!: CompiledShow;
   private screens: { unit: ScreenUnit; parts: MistTechnique[]; uniforms: ReturnType<typeof nozzleUniforms> }[] = [];
   file!: ShowFile;
@@ -98,6 +102,11 @@ export class ShowRuntime {
       this.stage.scene.remove(this.jets.object);
       this.jets.dispose();
     }
+    if (this.bodies) {
+      this.stage.scene.remove(this.bodies.object);
+      this.stage.setUnreflected(this.bodies.object, false);
+      this.bodies.dispose();
+    }
     this.layout = buildLayout(this.venue, quality);
     this.history = new ParamHistory(this.layout.channels);
     const g = this.drawnGraphics;
@@ -112,6 +121,10 @@ export class ShowRuntime {
     if (this.screens.length && this.screensFine !== g.mist) this.dropScreens();
     this.jets.lightModel.value = LIGHT_MODEL[this.lighting];
     this.stage.scene.add(this.jets.object);
+    this.bodies = new FixtureBodies(this.layout, this.history);
+    this.bodies.object.visible = this.bodiesOn;
+    this.stage.scene.add(this.bodies.object);
+    this.stage.setUnreflected(this.bodies.object, true);
     if (this.screens.length === 0) this.buildScreens();
     if (this.file) this.setShow(this.file);
   }
@@ -174,7 +187,18 @@ export class ShowRuntime {
       // a show without fireworks after one with them: no light left behind
       this.stage.setSkyLights([], false);
       this.jets.haze.setPyro(this.pyroLight.set(0, 0, 0), false);
+      this.bodies.setPyro(this.pyroLight);
     }
+  }
+
+  /** Show or hide the fixtures' bodies (the player's 表示 → 機材, ?fixtures=0). Hidden, nothing of them is drawn. */
+  setFixtures(on: boolean) {
+    this.bodiesOn = on;
+    this.bodies.object.visible = on;
+  }
+
+  get fixturesShown(): boolean {
+    return this.bodiesOn;
   }
 
   /**
@@ -280,6 +304,7 @@ export class ShowRuntime {
     // and the water in front of it
     const levels = this.screens.map(({ unit }) => this.mistAt(unit.index, t));
     const up = levels.some((l) => l > 0.01);
+    this.bodies.update(t, this.history.kNow, up);
     const zones = this.layout.projector;
     const zoneLevel = zones.map((z) => Math.min(PROJECTOR_MAX, Math.max(0, this.history.current(z.index, CH.intensity, t))));
     const top = Math.max(0, ...zoneLevel);
@@ -335,5 +360,7 @@ export class ShowRuntime {
       L.addScaledVector(l.col, 4000 / (d2 + 4000));
     }
     this.jets.haze.setPyro(L.multiplyScalar(0.05));
+    // the same light on the fixtures' bodies (they stand lower and nearer the water)
+    this.bodies.setPyro(L);
   }
 }

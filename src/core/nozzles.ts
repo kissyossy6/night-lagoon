@@ -11,6 +11,20 @@ export const TYPE_ID: Record<NozzleType, number> = {
   mist: 5,
 };
 
+/**
+ * Whether a nozzle of this type sits on a turning head, as the default for
+ * the fixture table: a whip (oscillating) and a fan do. A grid jet, a
+ * geyser, a chaser, a mist line and the desk / garden / plaza jets are fixed
+ * upright: pan and tilt do not lean their water (the real pump on the desk
+ * cannot). A flower (ring) stays upright too and reads tilt as how far it
+ * opens (2026-11-12). A kind can say otherwise (NozzleUse.turns: the
+ * garden's small fan is a fan whose head is fixed); the rest of the code
+ * reads Fixture.turns (show/layout.ts), not this.
+ */
+export function headTurns(type: NozzleType): boolean {
+  return type === 'oscillating' || type === 'fan';
+}
+
 /** Physical description of one nozzle (or one fixture with several sub-jets). */
 export interface NozzleSpec {
   type: NozzleType;

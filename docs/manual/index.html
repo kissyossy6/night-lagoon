@@ -300,10 +300,11 @@ npm run dev</pre>
   </article>
 
   <article class="cmp" id="player-view">
-    <h3>画質の段階・照明モード（表示 ▾）</h3>
+    <h3>画質の段階・照明モード・機材（表示 ▾）</h3>
     <ol class="steps">
       <li>下のバーの「表示」を押す。</li>
       <li>「照明」で「リアル」か「理想」を押す（<kbd>L</kbd> でも切り替わる）。</li>
+      <li>「機材」で「出す」か「隠す」を押す（<kbd>F</kbd> でも切り替わる）。</li>
       <li>「画質」で「自動・高・中・低」のどれかを押す。</li>
     </ol>
     <ul class="plain">
@@ -311,6 +312,7 @@ npm run dev</pre>
       <li><b>理想</b>：見栄えを優先した光（柱のてっぺんまで色が付く）。実在の機材の裏付けはない。</li>
       <li><b>自動</b>：初めはこれ。描くのが重い（直近の平均が 20 ms を超える）と、1段ずつ下げて「描画が重いため品質を「中」に下げました」と出す。</li>
       <li><b>高・中・低</b>：決めた画質のまま。<b>低</b> にすると、水面の新しい見た目（5章）も切れて軽くなる。</li>
+      <li><b>機材</b>：噴水のノズル・首振りの頭・ポンプ・水幕の管・プロジェクター・花火の筒（湖だけ）の本体。初めは「出す」。夜なので暗い金属・樹脂の色で、月明かりと、その機材の LED の光で照らされた所だけがぼんやり見える。LED の輪はキューの色で光り、明るさ 0 で消える。ウィップと湖のファンの頭は、キューのパン・チルトどおりに水と同じ向きへ回る。湖では水面から頭だけが出る。水面には映らない（重さのため）。「隠す」にすると前の絵とまったく同じ。動画・Vision Pro の書き出しも、このときの出す／隠すで撮る。</li>
     </ul>
     <div class="figs">
       <figure><img loading="lazy" src="img/04-view.jpg" alt="表示メニュー"><figcaption>「表示」の中：照明（Lキー）リアル／理想、画質 自動／高／中／低</figcaption></figure>
@@ -410,6 +412,7 @@ npm run dev</pre>
       <tr><td><code>?venue=</code></td><td>会場。<code>desk</code>（机）・<code>garden</code>（庭）・<code>plaza</code>（広場）・<code>lagoon</code>、または自分で作った会場の id。</td></tr>
       <tr><td><code>?cam=</code></td><td>カメラ。<code>audience</code> 客席・<code>eye</code> 目線・<code>screen</code>・<code>wide</code> 遠景・<code>low</code> 水面・<code>left</code>・<code>right</code>・<code>aerial</code> 空撮・<code>sky</code> 花火と水・<code>pyro</code> 花火・<code>auto</code> おまかせ・<code>free</code> 自由。</td></tr>
       <tr><td><code>?light=</code></td><td>照明。<code>real</code>（リアル）か <code>ideal</code>（理想）。</td></tr>
+      <tr><td><code>?fixtures=0</code></td><td>機材の本体を隠す（表示 ▾ の「機材」→「隠す」と同じ）。なしは出す。</td></tr>
       <tr><td><code>?quality=</code></td><td>画質を決めたままにする。<code>high</code>・<code>medium</code>・<code>low</code>。</td></tr>
       <tr><td><code>?gfx=</code></td><td>確かめ用。<code>off</code>＝水面の新しい見た目を全部切る（前の見た目）。<code>impact,surface,mist</code> のうち書いたものだけ入れる。<code>all</code>＝全部。</td></tr>
       <tr><td><code>?music=</code></td><td>自作の曲を作って流す。<code>score</code>（ラプソディー・イン・ブルーの編曲）か <code>original</code>（合成音の曲）。</td></tr>
@@ -424,7 +427,7 @@ npm run dev</pre>
 <!-- ============================================================ 3 -->
 <section class="theme" id="editor" data-short="エディタ">
   <h2><span class="n">3</span>エディタ</h2>
-  <p class="intro">時間軸で演出を作る画面（<code>edit.html</code>）。上の帯：← 一覧・プロジェクト名・ファイル ▾・書き出し ▾・会場 ▾・↶ ↷・再生・照明・画質・視点リセット・ミュート・▶ 本番で再生。左上が 3D、左下が時間軸、右が「キュー｜警告」。</p>
+  <p class="intro">時間軸で演出を作る画面（<code>edit.html</code>）。上の帯：← 一覧・プロジェクト名・ファイル ▾・書き出し ▾・会場 ▾・↶ ↷・再生・照明・画質・視点リセット・ミュート・▶ 本番で再生。左上が 3D、左下が時間軸、右が「キュー｜警告」。3D には機材の本体（ノズル・首振りの頭・ポンプなど）がいつも出ている。首の動く機材の頭はキューどおりに回る。</p>
 
   <article class="cmp" id="editor-tabs">
     <h3>タブ（全体・水・光・水幕・花火）</h3>
@@ -1008,7 +1011,7 @@ npm run dev</pre>
       <dt>S／M</dt><dd>フォルダの見出しのボタン。S＝これだけ 3D に出す、M＝3D から消す。エディタの見え方だけ。</dd>
       <dt>区間</dt><dd>曲の場面の名前（序章・目覚め・テーマ・物語・高まり・フィナーレ・ラスト・終章）。</dd>
       <dt>ターゲット</dt><dd>キューが動かす台。<code>grid[0-87]</code>（グリッドの0〜87番）、<code>@名前</code>（会場の部品の名前）など。</dd>
-      <dt>設定値 (set)</dt><dd>水圧・パン（左右の向き）・チルト（前後の傾き）・色・明るさ。</dd>
+      <dt>設定値 (set)</dt><dd>水圧・パン（左右の向き）・チルト（前後の傾き）・色・明るさ。パンとチルトで水が傾くのは、首の動く台（ウィップ・床の首振り・湖のファン）だけ。グリッド・チェイサー・ガイザー・噴き上げ・庭の小さい扇は首が動かないので、パンやチルトを入れても上向きのまま。フラワーのチルトは花の開く角度。</dd>
       <dt>長さ dur</dt><dd>今の値から新しい値へ移るのにかける秒数。</dd>
       <dt>イージング</dt><dd>移り方。直線・イーズイン（ゆっくり始まる）・イーズアウト（ゆっくり終わる）・ステップ（即時）。</dd>
       <dt>時差 stagger</dt><dd>台ごとに少しずつずらす秒数。</dd>

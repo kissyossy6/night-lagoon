@@ -10,8 +10,9 @@ import { theme } from '../ui/theme';
  * darker. Only the editor's preview draws it; the player, the videos and the
  * Vision Pro export never do.
  *
- * The 3D has no bodies for the fixtures (only water and light), so the line
- * goes round stand-in shapes (the user chose 台＋水の柱, 2026-11-06): the
+ * The line goes round stand-in shapes (the user chose 台＋水の柱, 2026-11-06),
+ * not the drawn bodies (show/bodies.ts, since 2026-11-12; far ones are a few
+ * pixels): the
  * 台 (a small block where the nozzle stands, so a fixture with no water
  * still shows) and, while water runs, the column
  * (from the nozzle along the head to its height at the current pressure).
@@ -201,9 +202,13 @@ export class SelectionOutline {
         put('sheets', active);
         return;
       }
-      const pan = evaluate(show, fx.index, CH.pan, t);
-      const tilt = evaluate(show, fx.index, CH.tilt, t);
-      dir.set(Math.sin(pan), Math.cos(pan) * Math.cos(tilt), Math.cos(pan) * Math.sin(tilt)).normalize();
+      // only a head that turns leans (Fixture.turns); the rest stand upright
+      // as the water does (a flower reads tilt as how far it opens)
+      if (fx.turns) {
+        const pan = evaluate(show, fx.index, CH.pan, t);
+        const tilt = evaluate(show, fx.index, CH.tilt, t);
+        dir.set(Math.sin(pan), Math.cos(pan) * Math.cos(tilt), Math.cos(pan) * Math.sin(tilt)).normalize();
+      } else dir.copy(up);
       q.setFromUnitVectors(up, dir);
       // a leaning jet peaks along its own direction, at h·cosθ (fountain-physics 4):
       // the stand-in ends at the top of the arc, not past it

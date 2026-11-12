@@ -61,7 +61,7 @@ uniform int   uLightModel;
 //   2 spread, jets, turb, kDrop   3 type params
 //   4 beam half-angle, candela, life, slot span   5 kCol, kMist, beam length
 //   6 drawn size, drop size (layout.ts drawScale: 1 for every lagoon fixture)
-//   7 impact strength, ripple wavelength (techniques/impact.ts)
+//   7 impact strength, ripple wavelength (techniques/impact.ts), head turns (1/0)
 Fix loadFix(int f, out float life, out float span) {
   vec4 a = texelFetch(uFix, ivec2(f, 0), 0);
   vec4 b = texelFetch(uFix, ivec2(f, 1), 0);
@@ -96,11 +96,17 @@ Fix loadFix(int f, out float life, out float span) {
 }
 
 // Nozzle state of fixture f at time tt, for sub-jet 'jet'. Returns pressure.
-// Rings stay upright and use the tilt channel to open outward (bloom).
+// Only a head that turns leans with pan / tilt (row 7 z, Fixture.turns from
+// the fixture table: the whips and the lagoon's fans). A grid jet, a geyser,
+// a chaser, a mist line and the garden's small fixed fan stand upright, so
+// pan / tilt cues do not lean them (a fixed pump on the desk cannot lean its
+// water, 2026-11-12). Rings stay upright and use the tilt channel to open
+// outward (bloom).
 float nozzleAt(Fix fx, int f, float tt, float jet, out vec3 base, out vec3 dir) {
   vec4 s = histAt(uHistA, f, tt);
   bool ring = fx.type == 4;
-  vec3 head = ring ? vec3(0.0, 1.0, 0.0) : headDir(s.y, s.z);
+  bool turns = texelFetch(uFix, ivec2(f, 7), 0).z > 0.5;
+  vec3 head = turns ? headDir(s.y, s.z) : vec3(0.0, 1.0, 0.0);
   subJet(fx, head, ring ? s.z : 0.0, jet, base, dir);
   return s.x;
 }
@@ -563,7 +569,9 @@ export class JetField {
       put(5, fx.index, [s.kCol, s.kMist, 30, s.fadeLen ?? 0]);
       const d = drawScale(s.height);
       put(6, fx.index, [d.size, d.drop, s.fallFade ?? 0, s.guide ?? 1]);
-      put(7, fx.index, impactShape(s, d.size));
+      // row 7: impact strength and ripple (techniques/impact.ts), then whether the head turns
+      const im = impactShape(s, d.size);
+      put(7, fx.index, [im[0], im[1], fx.turns ? 1 : 0, 0]);
     }
 
     // particle slots: spray then mist for each fixture

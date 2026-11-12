@@ -252,31 +252,32 @@ export const WATER_KINDS: FixtureKind[] = [
  * water yet (dev-plan B7).
  */
 function smallKinds(): FixtureKind[] {
-  const jet = (id: string, name: string, label: string, accent: string, height: number, bore: number, spray: number, place: FixtureKind['place']): FixtureKind => ({
+  const jet = (id: string, name: string, label: string, accent: string, height: number, bore: number, spray: number, place: FixtureKind['place'], body?: 'pump' | 'floor'): FixtureKind => ({
     id,
     name,
     label,
     folder: 'water',
     lane: { base: '#2c4468', accent },
-    nozzle: { type: 'vertical', spec: { height, jets: 1, p: [0, 0, 0, 0], bore }, spray, mist: Math.max(2, Math.round(spray / 16)), strands: 2 },
+    nozzle: { type: 'vertical', spec: { height, jets: 1, p: [0, 0, 0, 0], bore }, spray, mist: Math.max(2, Math.round(spray / 16)), strands: 2, body },
     cue: waterCue,
     place,
   });
   return [
-    jet('desk-jet', 'ミニ噴き上げ', 'ミニ噴き上げ（机・垂直 0.1 m）', '#8fc4ff', 0.1, 0.0025, 40, onWater(0.03, 0.007)),
+    jet('desk-jet', 'ミニ噴き上げ', 'ミニ噴き上げ（机・垂直 0.1 m）', '#8fc4ff', 0.1, 0.0025, 40, onWater(0.03, 0.007), 'pump'),
     jet('garden-jet', '庭の噴き上げ', '庭の噴き上げ（庭・垂直 1 m）', '#6fb0ff', 1, 0.008, 120, onWater(0.25, 0.2)),
-    // a fixed fan: the head does not move, its jets open ±45° (NOZZLES.fan p.x)
+    // a fixed fan: the head does not move (turns: false, so pan / tilt do not
+    // lean it), its jets open ±45° (NOZZLES.fan p.x)
     {
       id: 'garden-fan',
       name: '小さい扇',
       label: '小さい扇（庭・扇 0.5 m）',
       folder: 'water',
       lane: { base: '#30445a', accent: '#9fdcff' },
-      nozzle: { type: 'fan', spec: { height: 0.5, jets: 7, p: [1.6, 0, 0, 0], bore: 0.004, fadeLen: 0.5, fallFade: 0.15, guide: 0.3 }, spray: 280, mist: 12, strands: 2 },
+      nozzle: { type: 'fan', spec: { height: 0.5, jets: 7, p: [1.6, 0, 0, 0], bore: 0.004, fadeLen: 0.5, fallFade: 0.15, guide: 0.3 }, spray: 280, mist: 12, strands: 2, turns: false },
       cue: waterCue,
       place: onWater(0.5, 0.3, 45),
     },
-    jet('floor-jet', '床の噴き上げ', '床の噴き上げ（広場・垂直 4 m）', '#5a9cff', 4, 0.016, 260, onWater(1, 1.8)),
+    jet('floor-jet', '床の噴き上げ', '床の噴き上げ（広場・垂直 4 m）', '#5a9cff', 4, 0.016, 260, onWater(1, 1.8), 'floor'),
     // a small whip: its head leans 20° at most
     {
       id: 'floor-whip',
@@ -284,7 +285,7 @@ function smallKinds(): FixtureKind[] {
       label: '床の首振り（広場・首振り 6 m）',
       folder: 'water',
       lane: { base: '#3b3566', accent: '#c0a8ff' },
-      nozzle: { type: 'oscillating', spec: { height: 6, jets: 1, p: [0, 0, 0, 0], bore: 0.02, fadeLen: 6 }, spray: 520, mist: 24, strands: 3 },
+      nozzle: { type: 'oscillating', spec: { height: 6, jets: 1, p: [0, 0, 0, 0], bore: 0.02, fadeLen: 6 }, spray: 520, mist: 24, strands: 3, body: 'floor' },
       cue: waterCue,
       place: onWater(1.5, 3.4, 20),
     },

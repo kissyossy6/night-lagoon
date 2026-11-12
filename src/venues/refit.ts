@@ -58,9 +58,11 @@ const NEAR: Record<NozzleType, NozzleType[]> = {
 const HEAD_MACROS = new Set(['sway', 'spread', 'lean', 'bloom']);
 
 /**
- * A cue for a stand-in whose head does not move (anything but a whip): what
- * leans or turns is left out — a fixed jet told to lean drew an arc no real
- * pump on the desk can make. Null when nothing but the movement was in it.
+ * A cue for a stand-in whose head does not move (Fixture.turns false): what
+ * leans or turns is left out — a fixed jet cannot lean, so the movement has
+ * no meaning there (since 2026-11-12 the simulator also keeps a fixed jet
+ * upright whatever pan / tilt it is given; before that it drew an arc no
+ * real pump on the desk can make). Null when nothing but the movement was in it.
  */
 export function withoutHead(c: Cue): Cue | null {
   const set = c.set ? { ...c.set } : undefined;
@@ -294,7 +296,7 @@ export function refitCues(file: ShowFile, fromVenue: Venue, toVenue: Venue): { c
     const target = [...aims].map(([g, at]) => writePart(g, at, to.groups[g].length)).join(',');
     if (target === c.target) return c;
     // a stand-in that cannot lean takes only the water and the light
-    const fixed = [...aims.keys()].some((g) => to.fixtures[to.groups[g][0]].type !== 'oscillating' && !plainParts(c.target, from).some((p) => readPart(p, from)?.group === g));
+    const fixed = [...aims.keys()].some((g) => !to.fixtures[to.groups[g][0]].turns && !plainParts(c.target, from).some((p) => readPart(p, from)?.group === g));
     const body = fixed ? withoutHead(c) : c;
     if (!body) {
       headOnly++;

@@ -39,6 +39,7 @@ const EDITOR_STORE_KEY = 'water-show-editor:v1';
  *   shot  hide the UI, set window.__ready once rendered
  *   perf  time 60 frames, report window.__perf (ms/frame)
  *   venue play the show in another venue (built-in or made in venue.html)
+ *   fixtures=0  hide the fixtures' bodies (表示 → 機材; shown by default)
  */
 
 const q = new URLSearchParams(location.search);
@@ -86,6 +87,8 @@ if (!shot) rt.stage.setResolution(tier.pixelRatio, tier.reflection);
 rt.setLighting((q.get('light') as LightingMode) ?? 'real');
 // stage 7's water looks: on by default, ?gfx=off for the old look (show/graphics.ts)
 if (q.has('gfx')) rt.setGraphics(parseGraphics(q.get('gfx')));
+// the fixtures' bodies (bodies.ts): shown by default, ?fixtures=0 hides them
+if (q.get('fixtures') === '0' || q.get('fixtures') === 'off') rt.setFixtures(false);
 
 function loadShow(): ShowFile {
   const file = loadShowFile();
@@ -343,9 +346,9 @@ function pressed(group: string, value: string) {
     b.setAttribute('aria-pressed', String(b.dataset.v === value));
   }
   if (group === 'cam') $('cam-now').textContent = CAM_LABEL(value as CamMode);
-  if (group === 'light' || group === 'quality') {
+  if (group === 'light' || group === 'quality' || group === 'fixtures') {
     const on = (g: string) => document.querySelector<HTMLButtonElement>(`#${g} button[aria-pressed="true"]`)?.textContent ?? '';
-    $('view-now').textContent = `${on('light')}・${on('quality')}`;
+    $('view-now').textContent = `${on('light')}・${on('quality')}${document.querySelector('#fixtures button[data-v="off"][aria-pressed="true"]') ? '・機材なし' : ''}`;
   }
 }
 
@@ -511,6 +514,12 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('#light button')) {
   };
 }
 pressed('light', rt.lightingMode);
+function setFixtures(on: boolean) {
+  rt.setFixtures(on);
+  pressed('fixtures', on ? 'on' : 'off');
+}
+for (const b of document.querySelectorAll<HTMLButtonElement>('#fixtures button')) b.onclick = () => setFixtures(b.dataset.v === 'on');
+pressed('fixtures', rt.fixturesShown ? 'on' : 'off');
 const camGroup = $<HTMLSpanElement>('cam');
 CAM_MODES.forEach((m, i) => {
   const b = document.createElement('button');
@@ -563,6 +572,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.code === 'ArrowLeft') clock.seek(clock.time() - 5);
   else if (e.code === 'KeyW') showScope(scopeEl.hidden);
   else if (e.code === 'KeyS') setSplash(!splashOn);
+  else if (e.code === 'KeyF') setFixtures(!rt.fixturesShown);
   else if (e.code === 'Escape') openMenu(null);
   else if (e.code === 'KeyL') {
     const next: LightingMode = rt.lightingMode === 'real' ? 'ideal' : 'real';

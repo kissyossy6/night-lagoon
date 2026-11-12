@@ -316,6 +316,14 @@ export class Stage {
     });
     this.water.rotation.x = -Math.PI / 2;
     this.scene.add(this.water);
+    // what is left out of the reflection is hidden while the mirror image is drawn
+    const reflect = this.water.onBeforeRender.bind(this.water);
+    this.water.onBeforeRender = (...a) => {
+      const shown = [...this.unreflected].filter((o) => o.visible);
+      for (const o of shown) o.visible = false;
+      reflect(...a);
+      for (const o of shown) o.visible = true;
+    };
     const mat = this.water.material as THREE.ShaderMaterial;
     mat.uniforms.color.value = new THREE.Color(0.0015, 0.0025, 0.005);
     this.waterUniforms = mat.uniforms;
@@ -349,6 +357,18 @@ export class Stage {
 
   private reflectionScale = 0.5;
   private fixed: [number, number] | null = null;
+  /**
+   * Objects the water does not reflect: the fixtures' bodies (show/bodies.ts),
+   * small and dark at the waterline, cost more than a millisecond a frame
+   * in the reflection pass for next to nothing seen there.
+   */
+  private unreflected = new Set<THREE.Object3D>();
+
+  /** Leave an object out of the water's reflection (true) or reflect it again. */
+  setUnreflected(o: THREE.Object3D, on: boolean) {
+    if (on) this.unreflected.add(o);
+    else this.unreflected.delete(o);
+  }
 
   /**
    * Render at a fixed size in pixels (video export), or follow the window

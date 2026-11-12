@@ -93,22 +93,22 @@ void main() {
 }`;
 
 /** Haze per fixture type: how wide the mist hangs and how much light it returns. */
-function shape(fx: Fixture): [number, number, number] {
+function shape(fx: Fixture): [number, number] {
   const s = fx.spec;
   switch (fx.type) {
     case 'vertical':
-      return [2.5, 0.018, 0];
+      return [2.5, 0.018];
     case 'oscillating':
-      return [3, 0.05, 0];
+      return [3, 0.05];
     case 'fan':
-      return [6, 0.05, 0];
+      return [6, 0.05];
     case 'ring':
-      return [5 + s.p[0], 0.06, 1];
+      return [5 + s.p[0], 0.06];
     case 'shooter':
       // geysers throw a heavy mist plume that lights the sky
-      return s.height > 40 ? [10, 0.06, 1] : [2.5, 0.025, 1];
+      return s.height > 40 ? [10, 0.06] : [2.5, 0.025];
     default:
-      return [3, 0.01, 1];
+      return [3, 0.01];
   }
 }
 
@@ -126,7 +126,9 @@ export class Haze {
     const shapes = new Float32Array(n * 4);
     const sizes = new Float32Array(n);
     for (const fx of layout.fixtures) {
-      const [w, gain, upright] = shape(fx);
+      const [w, gain] = shape(fx);
+      // the haze leans with the head only where the head turns (Fixture.turns)
+      const upright = fx.turns ? 0 : 1;
       fix[fx.index] = fx.index;
       origin.set(fx.position, fx.index * 3);
       const L = drawScale(fx.spec.height).size;

@@ -113,8 +113,10 @@ export class Preview {
     for (const fx of this.rt.layout.fixtures) {
       if (fx.index * 7 >= show.tracks.length) continue;
       const p = Math.max(0.05, evaluate(show, fx.index, CH.pressure, t));
-      const pan = evaluate(show, fx.index, CH.pan, t);
-      const tilt = evaluate(show, fx.index, CH.tilt, t);
+      // only a head that turns leans (Fixture.turns, as the water is drawn)
+      const turns = fx.turns;
+      const pan = turns ? evaluate(show, fx.index, CH.pan, t) : 0;
+      const tilt = turns ? evaluate(show, fx.index, CH.tilt, t) : 0;
       const h = fx.spec.height * p;
       a.set(...fx.position);
       b.set(Math.sin(pan), Math.cos(pan) * Math.cos(tilt), Math.cos(pan) * Math.sin(tilt)).multiplyScalar(h).add(a);
