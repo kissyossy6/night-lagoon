@@ -275,7 +275,7 @@ function renderBar() {
   const stops = findings.filter((f) => f.level === 'stop').length;
   const v3d = $<HTMLButtonElement>('view3d-btn');
   v3d.disabled = stops > 0;
-  v3d.title = stops ? `「止める」の警告が ${stops} つあります。直してから 3D で見られます` : 'この会場で本番画面を開く（エディタの演出があればそれを、なければ Night Lagoon）';
+  v3d.title = stops ? `「止める」の警告が ${stops} つあります。直してから 3D で見られます` : 'この会場で本番画面を開く（エディタの演出があればそれを、なければ Rhapsody in Blue）';
   $<HTMLButtonElement>('undo-btn').disabled = !undoStack.length;
   $<HTMLButtonElement>('redo-btn').disabled = !redoStack.length;
   $('snap-hint').textContent = `吸い付き ${SNAP[doc.scale] >= 0.1 ? `${SNAP[doc.scale]} m` : `${SNAP[doc.scale] * 100} cm`}・15°（Alt で外す）`;

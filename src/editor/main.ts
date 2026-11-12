@@ -431,7 +431,7 @@ const backLink = $<HTMLAnchorElement>('back-link');
 function showName() {
   nameBtn.textContent = project ? project.name : '確認用（プロジェクトなし）';
   nameBtn.disabled = !project;
-  nameBtn.title = project ? 'クリックで名前を変える' : 'プロジェクトを開いていません。ここでの変更はこのブラウザの確認用の保存にだけ入ります';
+  nameBtn.title = project ? `${project.name}（クリックで名前を変える）` : 'プロジェクトを開いていません。ここでの変更はこのブラウザの確認用の保存にだけ入ります';
   document.title = project ? `${project.name} — エディタ` : 'エディタ — Night Lagoon';
   $('dup-btn').textContent = project ? '複製して別のプロジェクトにする' : 'プロジェクトとして保存';
 }

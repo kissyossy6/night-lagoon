@@ -75,9 +75,14 @@ dialog { width: min(480px, calc(100vw - 32px)); box-sizing: border-box; padding:
 dialog::backdrop { background: var(--c-player-dim); }
 dialog form { display: grid; gap: 16px; margin: 0; }
 dialog h2 { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-bold); }
+/* the fields of a dialog: spaced like the form (label.check's -8px then sits under its field, not on it) */
+#dlg-body { display: grid; gap: 16px; }
+#dlg-body:empty { display: none; }
 dialog p { margin: 0; color: var(--c-player-muted); }
 dialog label.field { display: grid; gap: 8px; color: var(--c-player-muted); font-size: var(--fs-sm); }
 dialog input[type='file'] { font: inherit; font-size: var(--fs-sm); color: var(--c-player-strong); }
+dialog input[type='file']::file-selector-button { font: inherit; margin-right: 10px; padding: 6px 12px; color: var(--c-player-strong); background: transparent; border: 1px solid var(--c-player-line); border-radius: var(--radius); cursor: pointer; }
+dialog input[type='file']:disabled::file-selector-button { cursor: default; opacity: 0.5; }
 dialog label.check { display: flex; gap: 8px; align-items: center; color: var(--c-player-muted); font-size: var(--fs-sm); margin-top: -8px; }
 dialog input[type='text'] { font: inherit; font-size: var(--fs-lg); color: var(--c-player-strong); background: var(--c-input-bg); border: 1px solid var(--c-player-line); border-radius: var(--radius); padding: 8px; }
 dialog fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }

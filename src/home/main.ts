@@ -68,7 +68,7 @@ function card(p: ProjectSummary) {
     h(
       'div',
       { class: 'meta' },
-      h('span', { class: 'name' }, p.name),
+      h('span', { class: 'name', title: p.name }, p.name),
       sample ? h('span', { class: 'desc' }, p.description ?? '') : h('span', { class: 'info' }, `${venueName(p.venue)}・${len(p.duration)}・${ago(p.updated)}に更新`),
     ),
   );

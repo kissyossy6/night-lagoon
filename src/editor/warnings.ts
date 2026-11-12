@@ -96,7 +96,8 @@ export class WarningsPanel {
             h('span', 'l', LANES[laneOf(cue)]?.name ?? ''),
             h('span', 'x', `${cue.macro ? '∿ ' : ''}${cueLabel(cue)}${c.text ? `　${c.text}` : ''}`),
           );
-          row.title = 'クリック：このキューを選んでその時刻へ　ダブルクリック：キューの設定を開く';
+          // the row cuts a long message: the whole of it in the tooltip
+          row.title = `${cueLabel(cue)}${c.text ? `　${c.text}` : ''}\nクリック：このキューを選んでその時刻へ　ダブルクリック：キューの設定を開く`;
           row.addEventListener('click', () => this.actions.go(c.source));
           row.addEventListener('dblclick', () => this.actions.open(c.source));
           out.push(row);

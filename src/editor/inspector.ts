@@ -1140,6 +1140,8 @@ export class Inspector {
       ['Esc', '選択解除'],
     ];
     host.append(h('div', { className: 'keys' }, ...keys.flatMap(([k, v]) => [h('kbd', { textContent: k }), h('span', { textContent: v })])));
-    host.append(h('div', { className: 'note', textContent: '編集内容はブラウザに自動保存されます。ファイル › JSON を書き出す で保存してください。' }));
+    host.append(h('div', { className: 'note', textContent: new URLSearchParams(location.search).has('project')
+          ? '編集内容はプロジェクトに自動で保存されます。ファイル › JSON を書き出す で1つのファイルにもできます。'
+          : '確認用：編集内容はこのブラウザにだけ保存されます。残すときは ファイル › プロジェクトとして保存。' }));
   }
 }

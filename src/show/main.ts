@@ -405,10 +405,20 @@ function labelSections() {
     // a label never runs into the next section's
     el.style.width = `${((s.to - s.from) / showLength()) * 100}%`;
     el.textContent = s.name;
+    el.title = s.name;
     seekWrap.appendChild(el);
   }
   scope.sectionStarts = spans.map((s) => s.from);
+  fitSectionLabels();
 }
+/** A section too short for its name shows the name a row higher, whole, instead of cut. */
+function fitSectionLabels() {
+  for (const el of seekWrap.querySelectorAll<HTMLElement>('.sec')) {
+    el.classList.remove('up');
+    if (el.scrollWidth > el.clientWidth + 1) el.classList.add('up');
+  }
+}
+addEventListener('resize', fitSectionLabels);
 
 // waveform scope (scope.ts): the music over what the stage does, to judge sync
 const scopeEl = $<HTMLCanvasElement>('scope');

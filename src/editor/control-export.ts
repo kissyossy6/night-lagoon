@@ -59,7 +59,10 @@ export function setupControlExport(host: ControlExportHost) {
 
   $('cx-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    pop.hidden = !pop.hidden;
+    const was = pop.hidden;
+    // one menu at a time: close ファイル ▾ / 会場 ▾
+    document.querySelectorAll<HTMLElement>('.menu-pop').forEach((m) => (m.hidden = true));
+    pop.hidden = !was;
   });
   document.addEventListener('click', () => (pop.hidden = true));
   pop.addEventListener('click', (e) => {

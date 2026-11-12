@@ -20,18 +20,48 @@ button, input, select, textarea { font: inherit; color: inherit; }
   height: 40px;
   display: flex;
   align-items: center;
-  /* 10, not 12: the project's name at the left still leaves ▶ 本番で再生 inside 1440 px */
-  gap: 10px;
+  /* 照明・画質・視点リセット live on the preview (.view-tools), so everything
+     fits 1280 px; below that the names and the statuses give way first,
+     never ▶ 本番で再生 */
+  gap: 8px;
   padding: 0 12px;
   background: var(--c-head-top);
   border-bottom: 1px solid var(--c-line);
   white-space: nowrap;
 }
-.brand { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); margin-right: 4px; flex: none; }
+#bar > * { flex: none; }
+#bar > .spacer { flex: 1 1 0; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); margin-right: 4px; min-width: 0; }
+#bar > .brand { flex: 0 1 auto; }
+/* the venue stays readable; the project's name (tooltip: the whole name) gives way first */
+#venue-btn { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+/* the statuses shrink (the whole text stays in the tooltip); a warning keeps its room */
+#bar > .status { flex: 0 1 auto; min-width: 2.5em; overflow: hidden; text-overflow: ellipsis; }
+#bar > .status:empty { min-width: 0; }
+#bar > .status.warn { flex: none; }
+/* a narrow window: the all-is-well statuses step aside for the names (a warning still shows) */
+@media (max-width: 1180px) {
+  #bar > .status.ok { display: none; }
+}
+/* 照明・画質・視点リセット: on the preview's top right corner */
+.view-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--c-tip-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
 .brand .back { color: var(--c-text-dim); text-decoration: none; padding: 0 4px; height: var(--ctl-h); display: inline-flex; align-items: center; border-radius: var(--radius); }
 .brand .back:hover { color: var(--c-text-strong); background: var(--c-btn-hover); }
 /* the project's name: click to rename */
-.pname { font: inherit; font-weight: var(--fw-bold); color: var(--c-text-strong); background: transparent; border: 1px solid transparent; border-radius: var(--radius); height: var(--ctl-h); padding: 0 6px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; cursor: text; }
+.pname { font: inherit; font-weight: var(--fw-bold); color: var(--c-text-strong); background: transparent; border: 1px solid transparent; border-radius: var(--radius); height: var(--ctl-h); padding: 0 6px; max-width: 260px; min-width: 3em; overflow: hidden; text-overflow: ellipsis; cursor: text; }
 .pname:hover:not(:disabled) { border-color: var(--c-line-2); }
 .pname:disabled { font-weight: var(--fw-normal); color: var(--c-caution); cursor: default; }
 .pname[hidden] { display: none; }
@@ -363,9 +393,12 @@ textarea.json {
 .drop > .btn { flex: none; white-space: nowrap; }
 .drop > .hint { white-space: normal; }
 .drop.over { border-color: var(--c-drop-line); background: var(--c-primary-bg); }
-.sects { display: grid; grid-template-columns: 18px 1fr 76px 60px 30px; align-items: center; gap: 4px 6px; margin: 4px 0; }
+/* the 4th column holds 終わり and ↦: wide enough for 3 digits (115.0) so the buttons line up */
+.sects { display: grid; grid-template-columns: 18px minmax(0, 1fr) 76px 82px 30px; align-items: center; gap: 4px 6px; margin: 4px 0; }
 .sects input[type='color'] { height: 18px; width: 18px; }
-.sects .pair { display: flex; gap: 4px; align-items: center; justify-content: space-between; }
+.sects .pair { display: flex; gap: 4px; align-items: center; }
+.sects .pair > .hint { flex: 1; text-align: right; font-variant-numeric: tabular-nums; }
+.sects .pair > .btn { flex: none; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: var(--fs-sm); }
 .keys kbd {
   justify-self: start;

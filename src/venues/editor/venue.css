@@ -68,11 +68,13 @@
 
 #vn-stage { position: relative; overflow: hidden; min-width: 0; }
 #vn-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
-.vn-tools { position: absolute; left: 12px; top: 12px; display: flex; gap: 8px; align-items: center; white-space: nowrap; }
-.vn-tools .seg { flex: none; }
+/* right: leaves the room of − 全体 ＋; a narrow stage wraps the tools onto a 2nd row instead of cutting them */
+.vn-tools { position: absolute; left: 12px; top: 12px; right: 132px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; white-space: nowrap; pointer-events: none; }
+.vn-tools > * { flex: none; pointer-events: auto; }
 .vn-tools select.inp { width: auto; height: var(--ctl-h); }
 .vn-snap, .vn-hint { color: var(--c-text-faint); font-size: var(--fs-xs); }
-.vn-hint { position: absolute; left: 12px; bottom: 10px; right: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the whole hint, on as many lines as the stage needs */
+.vn-hint { position: absolute; left: 12px; bottom: 10px; right: 160px; line-height: 1.5; pointer-events: none; }
 .vn-zoom { position: absolute; right: 12px; top: 12px; display: flex; gap: 4px; }
 
 .vn-warn { display: grid; grid-template-columns: 14px 1fr; gap: 8px; padding: 6px 0; font-size: var(--fs-sm); border-top: 1px solid var(--c-line); cursor: default; }
