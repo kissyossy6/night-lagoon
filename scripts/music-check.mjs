@@ -66,6 +66,7 @@ const launch = { args: ['--use-gl=angle', '--ignore-gpu-blocklist', '--mute-audi
 const browser = await chromium.launch(launch).catch(() => chromium.launch({ ...launch, channel: 'chrome' }));
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];
+let newId = null;
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'warning' && /editor|music/.test(m.text()) && console.log(`  (console: ${m.text().slice(0, 160)})`));
 
@@ -105,6 +106,14 @@ try {
   ok(/^music-[0-9a-f]{12}\.wav$/.test(after.music.file) && after.music.name === 'click-128.wav', `ファイルはプロジェクトのフォルダに：${after.music.file}`);
   ok(after.past === 1, `曲の後ろのキューは消さずに警告：${after.past}`);
   ok(after.sects.join() === '全体', `区間は「全体」1つ：${after.sects.join('・')}`);
+
+  // the projector's lane: no picture strips while nothing is chosen to show (the screen is black)
+  await page.waitForTimeout(800);
+  const shown = await page.evaluate(() => {
+    const pm = window.__editor.timeline.picture;
+    return pm ? pm.zones.reduce((n, row) => n + row.filter((v) => v !== 0).length, 0) : -1;
+  });
+  ok(shown === 0, `黒の間は水幕の行に「映っている」線を出さない：${shown}`);
 
   // the onsets (音の頭) under the ruler, and snapping to them (the grid is still 120 BPM from 0 s here,
   // so the click track's beats at 0.5 + k × 0.46875 s fall between its beats)
@@ -165,8 +174,8 @@ try {
   ok(pic.up > 0.5 && pic.avg.every((v) => v < 0.002), `場面を選んでいない水幕は黒：霧 ${pic.up.toFixed(2)}・平均の色 ${pic.avg.map((v) => v.toFixed(3)).join(', ')}`);
   // the same moment drawn as before (the story at the show time) is not black: the check can tell
   const story = await page.evaluate(() => {
-    window.__rt.screen.render({ t: 20 });
-    window.__rt.screen.render({ t: 20 });
+    // the screen draws every other call and reads its average colour every few draws
+    for (let i = 0; i < 16; i++) window.__rt.screen.render({ t: 20 });
     return window.__rt.screen.averageColor();
   });
   ok(story.some((v) => v > 0.002), `比べ：前の描き方（時刻どおりの物語）なら色がある：${story.map((v) => v.toFixed(3)).join(', ')}`);
@@ -178,10 +187,26 @@ try {
   await page.waitForFunction(() => !window.__editor.state.file.music && /^background\./.test(window.__editor.transport.musicName), null, { timeout: 60000 });
   const back = await page.evaluate(() => window.__editor.state.file.duration);
   ok(back === 217, `「共通の曲に戻す」で 217 秒：${back}`);
+  await page.waitForTimeout(800);
+  const shownShared = await page.evaluate(() => window.__editor.timeline.picture.zones.reduce((n, row) => n + row.filter((v) => v !== 0).length, 0));
+  ok(shownShared > 0, `比べ：共通の曲（物語が流れる）なら同じキューで線が出る：${shownShared}`);
+  // a new empty show started on a picked music, from the list's 新規
+  await page.goto(`${BASE}/#projects`);
+  await page.click('#new-btn');
+  await page.fill('#dlg-body input[type=text]', '曲のテスト（新規・music-check）');
+  await page.setInputFiles('#dlg-body input[type=file]', wav);
+  await page.click('#dlg-actions button:has-text("作ってエディタで開く")');
+  await page.waitForURL(/edit\.html\?project=/, { timeout: 30000 });
+  newId = new URL(page.url()).searchParams.get('project');
+  await page.waitForFunction(() => window.__editor?.transport.musicName === 'click-128.wav' && !/draft/.test(location.search), null, { timeout: 90000 });
+  const fresh = await page.evaluate(() => ({ dur: window.__editor.state.file.duration, bpm: window.__editor.state.file.bpm, offset: window.__editor.state.file.offset, cues: window.__editor.state.file.cues.length }));
+  ok(Math.abs(fresh.dur - 60) < 0.05 && Math.abs(fresh.bpm - 128) <= 1 && Math.abs(fresh.offset - 0.5) < 0.04, `新規で曲を選ぶと、その長さ・拍で始まる：${fresh.dur} 秒・${fresh.bpm} BPM・${fresh.offset} 秒`);
+  ok(fresh.cues > 10 && !/draft/.test(page.url()), `「下書きを作る」（初めから入）で、曲から作った下書きが入る：${fresh.cues} キュー`);
   ok(errors.length === 0, `ページのエラーなし${errors.length ? `：${errors.join(' / ')}` : ''}`);
 } finally {
   await browser.close();
   await api(`/trash?id=${proj.id}`, { method: 'POST' });
+  if (newId) await api(`/trash?id=${newId}`, { method: 'POST' });
 }
 console.log(failed ? `\n${failed} failed` : '\nall checks passed');
 process.exit(failed ? 1 : 0);

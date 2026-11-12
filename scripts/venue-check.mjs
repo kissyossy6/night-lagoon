@@ -179,7 +179,8 @@ const S = await page.evaluate(async () => {
   };
 });
 for (const x of S.samples) ok(x.found && x.warn === '', `sample venue ${x.id} (${x.scale}) builds with no warnings (${x.warn || 'none'})`);
-ok(S.order === 'desk,garden,plaza,lagoon', `built-in venues list smallest first (${S.order})`);
+// 2026-11-12: + desk-8 (the real desk fountain's first build, docs/desk-build.md)
+ok(S.order === 'desk-8,desk,garden,plaza,lagoon', `built-in venues list smallest first (${S.order})`);
 ok(S.same === 0 && S.all > 400, `動かないキュー: Night Lagoon in the lagoon has none (${S.all} cues)`);
 ok(S.desk[0] > 0 && S.desk[1] > 0 && S.desk[0] + S.desk[1] <= S.desk[2], `動かないキュー: the desk tank counts ${S.desk[0]} none / ${S.desk[1]} part of ${S.desk[2]}`);
 ok(S.deskWhip === 'グループが無い' && S.deskRange === '番号が範囲の外（18台）', `reasons: whip → ${S.deskWhip}, grid[88-175] → ${S.deskRange}`);

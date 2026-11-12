@@ -2,6 +2,7 @@ import type { LightingMode } from '../core/nozzles';
 import { analyseMusic, estimateTempo, type MusicFeatures } from '../audio/analysis';
 import { MAIN_SHOW, SHOW_VARIANTS, buildShow, extendToMusic, type ShowVariant } from '../show/choreography';
 import { SHOW_DURATION } from '../show/song';
+import { buildDraft } from '../show/draft';
 import { setCurves } from '../show/cues';
 import type { Quality } from '../show/layout';
 import { sectionSpans, spanAt } from '../show/sections';
@@ -225,6 +226,7 @@ const actions = {
     reset: () => resetMusic(),
     loaded: () => (transport.music === 'ready' ? transport.musicName : transport.music === 'loading' ? '読み込み中…' : 'なし'),
     tempo: () => musicTempo(),
+    draft: () => makeDraft(true),
   },
 };
 
@@ -257,7 +259,8 @@ function toast(msg: string) {
   el.textContent = msg;
   el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => (el.hidden = true), 2200);
+  // a long message stays long enough to read
+  toastTimer = window.setTimeout(() => (el.hidden = true), Math.max(2200, msg.length * 70));
 }
 
 function updateUndo() {
@@ -639,7 +642,7 @@ const musicSourceOf = () => {
 transport.musicSource = musicSourceOf();
 let loadedMusic = musicKey();
 void transport.loadMusic().then((m) => {
-  if (m === 'none') toast('音楽が見つかりません — 無音のクロックで再生します');
+  if (m === 'none') toast(missingMusic() ?? '音楽が見つかりません — 無音のクロックで再生します');
   if (m !== 'ready' || !transport.audio) return;
   music = analyseMusic(transport.audio);
   setCurves(music.curves);
@@ -670,6 +673,13 @@ void transport.loadMusic().then((m) => {
   } else preview.setShow(view.filter(state.file));
 }).finally(() => {
   musicSettled = true;
+  // made from the list's 新規 with 「下書きを作る」: once, on an empty show with its own music
+  if (q.has('draft')) {
+    if (!state.file.cues.length) makeDraft(false);
+    const u = new URL(location.href);
+    u.searchParams.delete('draft');
+    history.replaceState(null, '', u);
+  }
   inspector.update();
   if (loadedMusic !== musicKey()) void reloadMusic();
 });
@@ -705,6 +715,31 @@ async function pickMusic(file: File) {
   toast(`曲を「${file.name}」（${clockLabel(length)}）にしました。` + (past ? `曲の後ろにあるキューが ${past} あります（消していません。警告の一覧に出ます）。` : '') + '⌘Z で戻せます');
 }
 
+/**
+ * The show names its own music but it could not be read: a show file taken
+ * from another project (JSON) brings the name, not the file.
+ */
+function missingMusic(): string | null {
+  const m = state.file.music;
+  if (!m) return null;
+  return `曲「${m.name}」がこのプロジェクトに見つかりません（JSON で持ってきた演出は、曲のファイルが付いてきません）。「曲を選ぶ…」で入れ直してください。今は無音で再生します`;
+}
+
+/**
+ * Replace the cues with a draft made from the project's own music and the
+ * venue's groups (src/show/draft.ts). Undoable. `ask`: confirm when there are cues.
+ */
+function makeDraft(ask: boolean): boolean {
+  if (!music || !state.file.music) return false;
+  const n = state.file.cues.length;
+  if (ask && n && !window.confirm(`今のキュー ${n} 個を、この曲から作った下書きで置き換えます（⌘Z で戻せます）`)) return false;
+  const cues = buildDraft({ music, file: state.file, groups: LAYOUT.groups });
+  state.mutate((f) => (f.cues = cues), { structural: true, source: 'music' });
+  state.setSelection([], -1);
+  toast(`曲から下書きを作りました（${cues.length} キュー）。気に入らない所を直していきます。⌘Z で戻せます`);
+  return true;
+}
+
 /** Back to the shared recording (Rhapsody in Blue) and its length. */
 function resetMusic() {
   if (!state.file.music) return;
@@ -722,10 +757,10 @@ function resetMusic() {
 state.on((e) => {
   if (e.kind === 'file' && musicSettled && musicKey() !== loadedMusic) void reloadMusic();
 });
-function musicTempo(): { bpm: number; offset: number } | null {
+function musicTempo(): { bpm: number; offset: number } | 'none' | null {
   if (!music || !state.file.music) return null;
   if (tempoOf?.music !== music) tempoOf = { music, tempo: estimateTempo(music.onsets) };
-  return tempoOf.tempo;
+  return tempoOf.tempo ?? 'none';
 }
 async function reloadMusic() {
   loadedMusic = musicKey();
@@ -739,7 +774,7 @@ async function reloadMusic() {
   preview.setShow(view.filter(state.file));
   musicSettled = true;
   inspector.update();
-  if (m === 'none') toast('曲を読み込めませんでした — 無音で再生します');
+  if (m === 'none') toast(missingMusic() ?? '曲を読み込めませんでした — 無音で再生します');
 }
 
 // 会場 ▾: the venue this show plays in (docs/detailed-design.md 6.5), and

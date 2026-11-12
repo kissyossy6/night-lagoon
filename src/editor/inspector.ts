@@ -55,8 +55,10 @@ export interface InspectorActions {
     reset(): void;
     /** The loaded music's name (or a word for loading / none). */
     loaded(): string;
-    /** The beat measured in the music, if any. */
-    tempo(): { bpm: number; offset: number } | null;
+    /** Replace the cues with a draft made from the music (src/show/draft.ts); false while the music is not analysed. */
+    draft(): boolean;
+    /** The beat measured in the music; 'none' when the music has no steady beat; null before it is analysed. */
+    tempo(): { bpm: number; offset: number } | 'none' | null;
   };
 }
 
@@ -195,9 +197,11 @@ export class Inspector {
     pick.addEventListener('click', () => file.click());
     const reset = h('button', { className: 'btn', textContent: '共通の曲に戻す', type: 'button' });
     reset.addEventListener('click', () => m.reset());
+    const draft = h('button', { className: 'btn', textContent: 'この曲で下書きを作る', type: 'button', title: '曲の大きさと音の頭から、振付の下書きを作ります（今のキューと置き換え。⌘Z で戻せます）' });
+    draft.addEventListener('click', () => m.draft());
     const note = h('div', { className: 'note' });
     const tempo = h('div', { className: 'actions' });
-    this.host.append(this.row('曲', name, file), h('div', { className: 'actions' }, pick, reset), tempo, note);
+    this.host.append(this.row('曲', name, file), h('div', { className: 'actions' }, pick, reset), h('div', { className: 'actions' }, draft), tempo, note);
     this.syncs.push(() => {
       const own = st.file.music;
       name.textContent = own ? own.name : '共通の曲（Rhapsody in Blue）';
@@ -205,11 +209,16 @@ export class Inspector {
       const why = m.blocked();
       pick.disabled = !!why;
       reset.hidden = !own;
+      draft.hidden = !own;
+      draft.disabled = !own || m.tempo() === null;
       note.textContent = why ?? (own ? '曲の長さがショーの長さです。曲の後ろのキューは流れません（警告に出ます）' : '自分の曲を入れると、長さと波形がその曲になります');
       const t = own ? m.tempo() : null;
       tempo.replaceChildren();
       tempo.hidden = true;
-      if (t && (Math.abs(t.bpm - st.file.bpm) > 0.05 || Math.abs(t.offset - st.file.offset) > 0.005)) {
+      if (t === 'none') {
+        tempo.hidden = false;
+        tempo.append(h('span', { className: 'hint', textContent: '拍の目安：見つかりません（テンポが揺れる曲など）。BPM とオフセットは手で、または「音の頭」にスナップして合わせます' }));
+      } else if (t && (Math.abs(t.bpm - st.file.bpm) > 0.05 || Math.abs(t.offset - st.file.offset) > 0.005)) {
         const use = h('button', { className: 'btn', textContent: '入れる', type: 'button' });
         use.addEventListener('click', () =>
           st.mutate(

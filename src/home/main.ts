@@ -229,10 +229,25 @@ function newDialog(preselect?: string) {
     opt('empty', '空のショー', 'キューの無い状態から'),
     ...SAMPLES.map((s) => opt(s.id, s.name, s.description ?? '見本', thumbs.get(s.id))),
   );
+  // the empty show can start on your own music (docs/music-plan.md); the samples keep theirs
+  const musicInput = h('input', { type: 'file', accept: 'audio/*' }) as HTMLInputElement;
+  const musicField = h('label', { class: 'field' }, '曲（空のショーだけ。あとからエディタでも選べます）', musicInput);
+  const draftBox = h('input', { type: 'checkbox', checked: '' }) as HTMLInputElement;
+  const draftField = h('label', { class: 'check' }, draftBox, ' 曲に合わせて振付の下書きを作る（あとで直せます）');
+  const syncMusic = () => {
+    const empty = ((from.querySelector('input:checked') as HTMLInputElement | null)?.value ?? 'empty') === 'empty';
+    musicInput.disabled = !empty || store.kind !== 'disk';
+    musicField.style.opacity = musicInput.disabled ? '0.45' : '';
+    draftBox.disabled = musicInput.disabled || !musicInput.files?.length;
+    draftField.style.opacity = draftBox.disabled ? '0.45' : '';
+  };
+  from.addEventListener('change', syncMusic);
+  musicInput.addEventListener('change', syncMusic);
+  syncMusic();
   const play = sample ? h('a', { href: playerUrl(sample.id), class: 'left' }, '▶ 再生だけ見る') : undefined;
   dialog(
     '新規プロジェクト',
-    [field, from],
+    [field, from, musicField, draftField],
     [
       cancel,
       {
@@ -242,15 +257,37 @@ function newDialog(preselect?: string) {
           const name = nameOf(input);
           const pick = (from.querySelector('input:checked') as HTMLInputElement | null)?.value ?? 'empty';
           const s = SAMPLES.find((x) => x.id === pick);
+          const file = !s && !musicInput.disabled ? musicInput.files?.[0] : undefined;
+          // read the music before making anything: a file that does not decode stops here
+          const own = file ? await readMusic(file) : null;
           const doc = s
             ? await store.create({ name, from: s.id, show: s.show ?? null, generate: s.show ? undefined : s.generate })
             : await store.create({ name, generate: 'empty' });
-          location.href = editorUrl(doc.id);
+          if (file && own) {
+            const stored = await store.saveMusic(doc.id, file, file.name);
+            doc.show = { title: name, bpm: own.bpm, beatsPerBar: 4, offset: own.offset, duration: own.duration, cues: [], music: { file: stored, name: file.name, duration: own.duration } };
+            delete doc.generate;
+            await store.save(doc);
+          }
+          location.href = editorUrl(doc.id) + (file && own && draftBox.checked ? '&draft=1' : '');
         },
       },
     ],
     play,
   );
+}
+
+/** A picked audio file's length, and its beat when one is found (else 120 BPM from 0 s). */
+async function readMusic(file: File): Promise<{ duration: number; bpm: number; offset: number }> {
+  let buf: AudioBuffer;
+  try {
+    buf = await new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 }).decodeAudioData(await file.arrayBuffer());
+  } catch {
+    throw new Error(`この曲は読めませんでした：${file.name}`);
+  }
+  const { analyseMusic, estimateTempo } = await import('../audio/analysis');
+  const tempo = estimateTempo(analyseMusic(buf).onsets);
+  return { duration: Math.round(buf.duration * 100) / 100, bpm: tempo?.bpm ?? 120, offset: tempo?.offset ?? 0 };
 }
 
 function renameDialog(p: ProjectSummary) {

@@ -50,3 +50,9 @@ docs/vr180-analysis.md
 
 # 曲を作るときに取ってきた元の録音（npm run music）
 .cache/
+
+# 宣伝用の画像・動画を作る道具（別の作業のもの。2026-11-12 持ち主「念のため入れないで」）
+scripts/promo/
+
+# 机の噴水の Wi-Fi のパスワード（tools/desk-fountain/secrets.example.h を写して作る）
+tools/desk-fountain/secrets.h

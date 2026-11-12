@@ -102,6 +102,7 @@ npm run dev
 ## 音楽
 
 - **プロジェクトごとの曲**：エディタの「ショー設定」の「曲を選ぶ…」で、そのプロジェクトに自分の曲を入れられる。曲は `projects/<id>/music-<hash>.<拡張子>` に置かれ（GitHub には入らない）、ショーの長さは曲の長さ、区間は「全体」から、拍の目安（BPM・最初の拍）を曲から測る。水幕は場面を選ぶまで黒。設計は `docs/music-plan.md`、確認は `node scripts/music-check.mjs`
+- **振付の下書き**：自分の曲を入れたら「この曲で下書きを作る」（または新規で曲を選ぶときの「下書きを作る」）で、曲の大きさと音の頭から、静かな始まり・二段の山・暗転・白い最後の一撃までの下書きができる（`src/show/draft.ts`、`docs/music-plan.md` 6）
 - 曲を入れていないプロジェクトと見本は、共通の曲を流す。`public/music/background.mp3`（.m4a / .ogg / .wav も可）を置くと、ショーとエディタが読み込む。ショーの開始画面の「音楽ファイルを選ぶ」でも選べる（その場限り）
 - 曲のファイルは GitHub に入れていない。`npm run music`（`scripts/get-music.mjs`）が元の録音を取ってきて作る。録音がもう手元にあれば `npm run music -- --source <ファイル.oga>`、作り直すときは `npm run music -- --force`。音量の上げ下げは `scripts/music/gain.json`（作ったときの曲から測った値）、取ってきた録音は `.cache/music/` に残る
 - 時計は音源の再生位置に合わせて進む
@@ -173,3 +174,9 @@ npm run dev
 | `node scripts/editor-check.mjs` | エディタの操作確認 |
 | `node scripts/music-check.mjs` | プロジェクトごとの曲：入れる・長さ・拍の目安・警告・⌘Z・本番再生・水幕が黒 |
 | `node scripts/venue-race-check.mjs` | 曲の解析前に会場を切り替えても戻らない |
+| `node scripts/tempo-check.mjs` | 拍の目安：120 BPM で作った曲で 120、テンポが揺れる録音では出さない |
+| `node scripts/draft-check.mjs` | 自分の曲から作る振付の下書き：構成・警告・机でも作れる・場面ごとの写真（`shots/draft/`） |
+
+## 机の噴水（実物）
+
+机の上の 8 台の小さな噴水を、エディタから Art-Net で動かす。会場「机の試作（8台）」、ESP32 のプログラム `tools/desk-fountain/`（Wi-Fi の設定は `secrets.example.h` を `secrets.h` に写す。GitHub には入らない）。部品・配線・合わせ直しは `docs/desk-build.md`。

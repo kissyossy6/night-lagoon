@@ -1,4 +1,4 @@
-import { CH, CHANNELS, HEAD_MAX_DEG_S, LED_COLOR_FADE_S, LED_FADE_OUT_S, cueTime, evaluate, type CompiledShow } from './cues';
+import { CH, CHANNELS, HEAD_MAX_DEG_S, LED_COLOR_FADE_S, LED_FADE_OUT_S, cueTime, evaluate, screenAt, type CompiledShow } from './cues';
 import { zonesOfScreen, type Layout } from './layout';
 import { MIST_LINGER } from './projector';
 import type { PyroWarning } from '../pyro/schedule';
@@ -165,6 +165,8 @@ export function pictureMap(show: CompiledShow, layout: Layout): PictureMap {
     const level = new Map(layout.screens.map((u) => [u, mistLevel(show, u.index, t)]));
     const running = [...level.values()].some((m) => m > MIST_ON);
     if (!running) continue;
+    // nothing chosen to show yet (a show on its own music before its first clip): the picture is black
+    if (screenAt(show, t).blank) continue;
     zones.forEach((z, k) => {
       if (evaluate(show, z.index, CH.intensity, t) < PICTURE_ON) return;
       const here = inZone[k].filter((u) => level.get(u)! > MIST_ON);

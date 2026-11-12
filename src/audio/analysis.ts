@@ -250,11 +250,12 @@ export function estimateTempo(onsets: readonly Onset[], range: [number, number] 
   const bpm = Math.round(best.bpm * 10) / 10;
   const period = 60 / bpm;
   const { phase } = score(bpm);
-  // the first beat: on the onsets' mean phase, at the music's first clear onset
-  // (not the grid run back to 0 s before the music starts)
+  // the first beat: on the onsets' mean phase, where the music starts
+  // (not the grid run back to 0 s before it)
   let offset = ((phase / (2 * Math.PI)) * period) % period;
   if (offset < 0) offset += period;
-  const start = os.find((o) => o.strength > 0.3)?.t ?? os[0].t;
+  // where the music starts (its first onset at all: a quiet opening is still bar 1)
+  const start = os[0].t;
   while (offset < start - period / 2) offset += period;
   return { bpm, offset: Math.round(offset * 1000) / 1000, confidence: best.r };
 }

@@ -1,0 +1,12 @@
+{
+  "id": "desk-8",
+  "name": "机の試作（8台）",
+  "scale": "desk",
+  "note": "実物の机の噴水の1台目（docs/desk-build.md）。60 × 30 cm の水槽に、小型の水中ポンプ 8 台を 6 cm おきに一列、それぞれの真下に LED。Art-Net のユニバース 1・番地 1 から 5 チャンネルずつ（ポンプ・R・G・B・明るさ）で、tools/desk-fountain の ESP32 が受ける。グループの名前はラグーンにそろえた（grid）。水の高さと動きは実物を測って合わせ直す（dev-plan B7）",
+  "water": { "kind": "rect", "width": 0.6, "depth": 0.3 },
+  "wind": [0, 0, 0],
+  "parts": [
+    { "kind": "line", "name": "噴水の列", "group": "grid", "fixture": "desk-jet", "count": 8, "from": [-0.21, 0], "to": [0.21, 0], "note": "左から 1〜8。ESP32 の PUMP_PINS と LED の並びも左から" },
+    { "kind": "seats", "name": "机の前", "from": [-0.4, 0.5], "to": [0.4, 0.5], "note": "机の前に座った人の目の位置" }
+  ]
+}
