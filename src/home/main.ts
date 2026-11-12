@@ -1,3 +1,4 @@
+import { keepMusic, musicDataOf, showWithMusic } from '../projects/music-json';
 import { getVenue } from '../venues';
 import { SHOW_DURATION } from '../show/song';
 import { SAMPLES, sampleSummaries } from '../projects/samples';
@@ -365,13 +366,16 @@ async function exportJson(p: ProjectSummary) {
     toast('まだ演出が作られていません。一度エディタで開いてから書き出してください');
     return;
   }
-  const blob = new Blob([JSON.stringify(doc.show, null, 1)], { type: 'application/json' });
+  // a show on its own music carries it (src/projects/music-json.ts)
+  const { out, note } = doc.show.music ? await showWithMusic(doc.show, p.id) : { out: doc.show, note: '' };
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = h('a', { href: url, download: `${p.name.replace(/[\\/:*?"<>|\s]+/g, '_')}.json` });
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  if (note) toast(`JSON を書き出しました${note}`);
 }
 
 $('import-btn').addEventListener('click', () => $('import-input').click());
@@ -382,11 +386,25 @@ $<HTMLInputElement>('import-input').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const { normaliseShow } = await import('../editor/model');
-    const show = normaliseShow(JSON.parse(await file.text()));
+    const raw = JSON.parse(await file.text());
+    const show = normaliseShow(raw);
     const name = show.title && show.title !== '新しいショー' ? show.title : file.name.replace(/\.json$/i, '');
+    // the music the file carries goes into the new project's folder
+    const carried = musicDataOf(raw);
+    if (carried) delete show.music;
     const doc = await store.create({ name, show: { ...show, title: name } });
+    let note = '';
+    if (carried) {
+      try {
+        const music = await keepMusic(carried, (blob, n) => store.saveMusic(doc.id, blob, n), show.duration);
+        await store.save({ ...doc, show: { ...doc.show!, music } });
+        note = `。曲「${carried.name}」も入れました`;
+      } catch (err) {
+        note = `。曲「${carried.name}」は入れられませんでした（${msg(err)}）`;
+      }
+    }
     await refresh();
-    toast(`「${doc.name}」を読み込みました（${show.cues.length} キュー）`);
+    toast(`「${doc.name}」を読み込みました（${show.cues.length} キュー）${note}`);
   } catch (err) {
     toast(`読み込めませんでした：${msg(err)}`);
   }

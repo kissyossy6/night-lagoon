@@ -96,7 +96,7 @@ projects/<id>/
 - `normaliseShow` が `music` を残すようにした（無いと開き直すと曲が消えていた）
 - 前からの不具合も直した：217 秒より短い自分のショー（空のショー 180 秒など）を開き直すと、古い保存の延長（`extendToMusic`）が Rhapsody の最後の 189 キューを足して 217 秒にしていた。延長は組み込みの版の題を持つものだけにした
 - 確かめ：`scripts/music-check.mjs`（18 項目）、見本3版 39 コマが作業前と0画素の差、typecheck・editor-check・player-check・stage6-check・venue-check・venue-editor-check・venue-race-check・control-check 通過
-- 残り：時間軸の水幕の行の線（霧に映る）は、黒の間も「映っている」と描く。JSON で書き出して別のプロジェクトへ読み込むと、曲のファイルは付いていかない（共通の曲で流れず、読み込めないお知らせ）。Vision Pro の試験台（`tools/vr180.html`）は見本の曲のまま
+- 残り：Vision Pro の試験台（`tools/vr180.html`）は見本の曲のまま。（2026-11-12 に直したもの：時間軸の水幕の行は黒の間に線を出さない。JSON の書き出しは曲を `music.data`（data: URL）として中に入れ、読み込むとプロジェクトのフォルダに戻す＝`src/projects/music-json.ts`、エディタと一覧の両方。確かめ `scripts/json-music-check.mjs`）
 
 ---
 

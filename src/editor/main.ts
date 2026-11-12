@@ -26,6 +26,7 @@ import { EditorState, MAX_HISTORY } from './state';
 import { Timeline } from './timeline';
 import { Transport } from './transport';
 import { isSampleId, musicUrl, projectStore, setLastProject, type ProjectStore } from '../projects/store';
+import { keepMusic, musicDataOf, showWithMusic } from '../projects/music-json';
 import type { ProjectDoc } from '../projects/types';
 
 /**
@@ -381,8 +382,13 @@ window.addEventListener(
   true,
 );
 
-function exportJson() {
-  const blob = new Blob([JSON.stringify(state.file, null, 1)], { type: 'application/json' });
+/**
+ * ファイル ▾ JSON を書き出す. A show on its own music carries the music in the
+ * file (src/projects/music-json.ts), so another project or computer gets it.
+ */
+async function exportJson() {
+  const { out, note } = state.file.music && project ? await showWithMusic(state.file, project.id) : { out: state.file, note: '' };
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -391,7 +397,7 @@ function exportJson() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast('JSON を書き出しました');
+  toast(`JSON を書き出しました${note}`);
 }
 
 pop.addEventListener('click', (e) => {
@@ -418,7 +424,7 @@ pop.addEventListener('click', (e) => {
       $('import-input').click();
       break;
     case 'export':
-      exportJson();
+      void exportJson();
       break;
   }
 });
@@ -429,9 +435,25 @@ pop.addEventListener('click', (e) => {
   input.value = '';
   if (!file) return;
   try {
-    const show = normaliseShow(JSON.parse(await file.text()));
+    const raw = JSON.parse(await file.text());
+    const show = normaliseShow(raw);
+    // the music inside the file (exportJson) goes into this project's folder
+    const carried = musicDataOf(raw);
+    let note = '';
+    if (carried) {
+      const why = actions.music.blocked();
+      if (why || !project || !store) {
+        delete show.music;
+        note = `。曲「${carried.name}」は入れられませんでした（${why ?? 'プロジェクトとして開くと入ります'}）`;
+      } else {
+        const p = project;
+        const st = store;
+        show.music = await keepMusic(carried, (blob, name) => st.saveMusic(p.id, blob, name), show.duration);
+        note = `。曲「${carried.name}」も入れました`;
+      }
+    }
     state.load(project ? { ...show, title: project.name } : show);
-    toast(`「${show.title}」を読み込みました (${show.cues.length} キュー)`);
+    toast(`「${show.title}」を読み込みました (${show.cues.length} キュー)${note}`);
   } catch (err) {
     toast(`読み込めませんでした: ${err instanceof Error ? err.message : err}`);
   }
@@ -879,7 +901,7 @@ async function pickMusic(file: File) {
 function missingMusic(): string | null {
   const m = state.file.music;
   if (!m) return null;
-  return `曲「${m.name}」がこのプロジェクトに見つかりません（JSON で持ってきた演出は、曲のファイルが付いてきません）。「曲を選ぶ…」で入れ直してください。今は無音で再生します`;
+  return `曲「${m.name}」がこのプロジェクトに見つかりません（曲の入っていない JSON から読み込んだ演出など）。「曲を選ぶ…」で入れ直してください。今は無音で再生します`;
 }
 
 /**
