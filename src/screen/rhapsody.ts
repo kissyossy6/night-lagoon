@@ -7,11 +7,10 @@ import { JAZZ, JAZZ_AT, RHAPSODY as R, RHAPSODY_AT } from '../show/song';
  * caricature line on a cobalt ground), drawn from memory: no frames, no
  * characters of the film. The people here are generic.
  *
- *   0-1.5      the blue ground comes up with the mist
- *   1.5-5      the pen enters from the left and climbs with the glissando,
- *              topping the tallest spire on its top note
- *   5-7.2      down the right side to the bridge; its cable last
- *   6-16       night: stars, windows light one by one under the theme
+ *   0-5        the blue ground comes up (the projector from 3 s, owner 2026-11-13)
+ *   5-8.5      the pen enters from the left and climbs to the tallest spire
+ *   8.5-10.7   down the right side to the bridge; its cable last
+ *   6-16       night: stars; the windows light one by one once it is drawn
  *   16-24      dawn: the sun rises between the towers (flares at 19.04),
  *              the night windows go out, the ground turns cobalt
  *   20-34      morning traffic: a yellow taxi, then a bus the other way
@@ -341,7 +340,7 @@ export class RhapsodyPicture {
     for (let i = 0; i < WINDOWS.length; i++) {
       const [x, y, ph] = WINDOWS[i];
       // night: lit one by one under the theme, out at dawn
-      let b = sstep(6.5 + ph * 8, 7 + ph * 8, u) * (1 - sstep(17 + ph * 6, 17.6 + ph * 6, u)) * 0.85;
+      let b = sstep(R.drawn - 0.5 + ph * 6, R.drawn + ph * 6, u) * (1 - sstep(17 + ph * 6, 17.6 + ph * 6, u)) * 0.85;
       // jazz: a wave of light runs through the city with the music
       if (u > 35.5) {
         const wave = Math.sin((x / 116) * 9 - (u - 36) * 3.2 + ph * 0.8);

@@ -250,7 +250,12 @@ export function buildShow(music?: MusicFeatures, variant: ShowVariant = 'lagoon'
     // (owner 2026-11-13)
     set(0, 'grid', { color: C.blue, intensity: 0 });
     set(0.3, 'grid', { intensity: 0.7 }, 1.5, { ease: 'out' });
-    set(0, 'screen', { pressure: 0, intensity: 1 });
+    // the projector waits dark while the mist builds and fades in once the
+    // curtain is up, so the picture appears on a formed screen instead of
+    // rising with it (owner 2026-11-13)
+    set(0, 'screen', { pressure: 0, intensity: 0 });
+    // blue from 3 s, the line from 5 s (owner 2026-11-13)
+    set(3, 'screen', { intensity: 1 }, 1.0, { ease: 'inOut' });
     // the mist builds a little slower (owner 2026-11-13): 1.4 s 'out' read as
     // a burst, because the curtain's height follows the square root of the
     // level; 'in' makes the height rise evenly over the 2.2 s

@@ -759,12 +759,19 @@ function updateExportNote() {
     // 2026-11-13), so about 7.1 over the whole show
     const perFrame = o.eye > 4096 ? 7.1 : 2.5;
     const gb = (vr180BytesPerSecond(o.eye, o.fps) * (o.to - o.from)) / 1e9;
-    $('export-note').textContent = `${fmt(o.from)}〜${fmt(o.to)}・${frames.toLocaleString()}コマ・${sound}・照明「${light}」。所要 約 ${fmt(frames * perFrame)}、ファイル 約 ${gb.toFixed(1)} GB（exports/visionpro/ に保存）。書き出し中はこのタブを開いたままにしてください。${seatNote(o.angle, o.eye)}${o.eye > 4096 ? '片目 7680 は 30 fps まで。' : ''}`;
+    $('export-note').textContent = `${fmt(o.from)}〜${fmt(o.to)}・${frames.toLocaleString()}コマ・${sound}・照明「${light}」。所要 約 ${duration(frames * perFrame)}、ファイル 約 ${gb.toFixed(1)} GB（exports/visionpro/ に保存）。書き出し中はこのタブを開いたままにしてください。${seatNote(o.angle, o.eye)}${o.eye > 4096 ? '片目 7680 は 30 fps まで（60 fps はこの大きさだと動画の決まりの上限を越え、Vision Pro で再生できない見込みが高いため）。' : ''}`;
   } else {
     $('export-note').textContent = `${fmt(o.from)}〜${fmt(o.to)}・${frames.toLocaleString()}コマ・${sound}・照明「${light}」。1コマずつ描くので、ショーの長さより時間がかかります`;
   }
 }
 exportForm.addEventListener('input', updateExportNote);
+
+/** A long export time in words: 約 12 時間 50 分, 約 25 分 (fmt reads as m:ss, which looked like 770:21). */
+function duration(sec: number): string {
+  const min = Math.max(1, Math.round(sec / 60));
+  const h = Math.floor(min / 60);
+  return h ? `${h} 時間${min % 60 ? ` ${min % 60} 分` : ''}` : `${min} 分`;
+}
 
 /** For the 180° note: how far the seat is, how much the two eyes differ there, and whether a person could sit there. */
 function seatNote(angle: string, eye: number): string {

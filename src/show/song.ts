@@ -142,10 +142,12 @@ export function finaleColor(t: number): string {
 export const RHAPSODY_AT = 1000;
 export const RHAPSODY = {
   /** the pen enters with the glissando and tops the tallest spire at its top note */
-  penIn: 1.5,
-  peak: 5.0,
+  // the blue ground comes up from 3 s and the pen waits until 5 s (owner
+  // 2026-11-13; was 1.5 / 5.0 / 7.2, the pen on the glissando)
+  penIn: 5.0,
+  peak: 8.5,
   /** the skyline is finished */
-  drawn: 7.2,
+  drawn: 10.7,
   /** the solo's strong notes (measured): the sun flares, rivets spark */
   hits: [19.04, 26.28, 32.12, 35.05],
   /** the picture lets go with the solo */
