@@ -405,7 +405,11 @@ function compileRaw(file: ShowFile, layout: Layout, projector: boolean): Compile
       s.from = prev ? segValue(prev, s.start) : def;
       if (head && limitSpeed(s, maxRate)) limited.add(s.source);
       if (valve) valveTiming(s);
-      if (led && ledTiming(s, ch)) ledSlowed.add(s.source);
+      // the state a show opens on (a cue at 0 s, no fade) is set before the
+      // show starts, so it is not an LED change: without this the start screen
+      // showed every ring at the default cyan, fading out after play (owner 2026-11-13)
+      const preset = !prev && s.start <= 0 && s.dur === 0;
+      if (led && !preset && ledTiming(s, ch)) ledSlowed.add(s.source);
       prev = s;
     }
   });

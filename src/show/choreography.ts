@@ -246,9 +246,15 @@ export function buildShow(music?: MusicFeatures, variant: ShowVariant = 'lagoon'
     // water: the riveter's sparks on the solo's strong notes jump in it.
     // (LED colour takes 0.6 s, too slow for a spark: the colour changes with
     // the dawn and the sparks are height and light.)
-    set(0, 'grid', { color: C.blue, intensity: 0.7 });
+    // dark while the start screen waits; the pilot lights come up once it plays
+    // (owner 2026-11-13)
+    set(0, 'grid', { color: C.blue, intensity: 0 });
+    set(0.3, 'grid', { intensity: 0.7 }, 1.5, { ease: 'out' });
     set(0, 'screen', { pressure: 0, intensity: 1 });
-    set(0, 'screen', { pressure: 1 }, 1.4, { ease: 'out', clip: { scene: 'rhapsody' } });
+    // the mist builds a little slower (owner 2026-11-13): 1.4 s 'out' read as
+    // a burst, because the curtain's height follows the square root of the
+    // level; 'in' makes the height rise evenly over the 2.2 s
+    set(0, 'screen', { pressure: 1 }, 2.2, { ease: 'in', clip: { scene: 'rhapsody' } });
     for (const row of [ROW.front, ROW.mid, ROW.back]) set(0, row, { pressure: 0.04 }, 1.5, { stagger: 0.008, order: 'center' });
     set(3, 'grid', { color: C.deep, intensity: 0.5 }, 2);
     set(8, FRONT_MID, { color: C.blue, intensity: 0.6 }, 1.5);
@@ -262,7 +268,10 @@ export function buildShow(music?: MusicFeatures, variant: ShowVariant = 'lagoon'
     set(M.hush, 'screen', { pressure: 0 }, 2.5, { ease: 'in' });
     set(RHAPSODY.length, 'screen', { intensity: 1 }, 0, { clip: { scene: 'sync' } });
   } else {
-    set(0, 'grid', { color: C.cyan, intensity: 0.9 });
+    // dark while the start screen waits; the pilot lights come up once it plays
+    // (owner 2026-11-13)
+    set(0, 'grid', { color: C.cyan, intensity: 0 });
+    set(0.3, 'grid', { intensity: 0.9 }, 1.5, { ease: 'out' });
     set(0, 'screen', { pressure: 0, intensity: 1 });
     for (const row of [ROW.front, ROW.mid, ROW.back]) set(0, row, { pressure: 0.04 }, 1.5, { stagger: 0.008, order: 'center' });
     set(3, 'grid', { color: C.deep, intensity: 0.6 }, 2);
