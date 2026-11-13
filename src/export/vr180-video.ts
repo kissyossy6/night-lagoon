@@ -4,6 +4,7 @@ import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 import type { ShowRuntime } from '../show/runtime';
 import { audioConfig, slice, yieldToPage } from './video';
 import { Vr180 } from './vr180';
+import type { SpatialAudio } from '../audio/spatial';
 
 /**
  * The show as a stereo 180° movie for Apple Vision Pro, from the player.
@@ -26,6 +27,12 @@ export interface Vr180ExportOptions {
   seat: THREE.Vector3;
   yaw: number;
   music: AudioBuffer | null;
+  /**
+   * The sound placed around the seat (src/audio/spatial.ts, 追記46b): the
+   * movie's sound becomes APAC Ambisonics, with the stereo music as the
+   * fallback track. Missing: the stereo music only, as before.
+   */
+  spatial?: SpatialAudio | null;
   /** File name of the movie (.mov). */
   name: string;
   onProgress?(p: { rendered: number; converted: number; total: number }): void;
@@ -48,14 +55,31 @@ const PIECE = 10;
 const AHEAD = 2;
 /** Bits per pixel per frame for the pieces (encoded again for the headset). */
 const BPP = 0.15;
-/** Constant quality of the headset movie (join --quality). */
-const QUALITY = 0.85;
+/**
+ * Constant quality of the headset movie (join --quality), by frame rate.
+ * 30 fps: 0.85 (docs/vr180-analysis.md 3). 60 fps at 4096: 0.8, the highest
+ * that keeps the heaviest second under Apple's 150 Mbps peak. Measured on
+ * the white finale (t = 210, 目線, 2026-11-13), per second: 0.85 → 200 Mbps,
+ * 0.8 → 123, 0.75 → 74, 0.7 → 53 (the whole show at 0.85 averaged 56).
+ */
+const quality = (_eye: number, fps: number) => (fps > 30 ? 0.8 : 0.85);
 
 /**
- * Movie bytes per second at QUALITY, measured on the climax (t = 165-175):
- * 12.5 MB/s at 4096, 17 MB/s at 7680. Quieter scenes take less.
+ * The highest frame rate per eye size. 7680 per eye at 60 fps is 7680² × 2
+ * eyes × 60 = 7.1 Gpx/s, twice Apple Immersive Video (4320² × 2 × 90 =
+ * 3.4 Gpx/s, the most the headset is known to play) and past HEVC level
+ * 6.2's 4.3 G samples/s; a 3.5 min show would also take about a day to draw.
+ * 4096 at 60 is 2.0 Gpx/s, within both.
  */
-export const vr180BytesPerSecond = (eye: number) => (eye > 4096 ? 17e6 : 12.5e6);
+export const VR180_MAX_FPS = (eye: number) => (eye > 4096 ? 30 : 60);
+
+/**
+ * Movie bytes per second on the heaviest scenes, so the disk check errs
+ * safe: 30 fps 12.5 MB/s at 4096, 17 MB/s at 7680 (the climax, t = 165-175);
+ * 60 fps at 4096 and quality 0.8 about 9 MB/s (the finale, t = 208-212).
+ * Quieter scenes take less: the whole show at 4096/60 fps came to a third.
+ */
+export const vr180BytesPerSecond = (eye: number, fps = 30) => (eye > 4096 ? 17e6 : fps > 30 ? 9e6 : 12.5e6);
 
 /** Projector picture to match the eye: the screen spans far more pixels than in the flat player. */
 export function vr180Projector(eye: number): [number, number] {
@@ -147,13 +171,34 @@ async function audioFile(music: AudioBuffer, from: number, to: number): Promise<
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * The spatial sound as ambi_0000.f32, ambi_0001.f32…: PIECE seconds each,
+ * float32 little-endian, the channels interleaved (ACN order, SN3D), at
+ * s.rate. The converter reads them in order (tools/apmp/join --ambisonics).
+ */
+async function uploadSpatial(id: string, s: SpatialAudio, signal?: AbortSignal) {
+  const n = PIECE * s.rate;
+  for (let k = 0, a = 0; a < s.frames; k++, a += n) {
+    if (signal?.aborted) throw new DOMException('書き出しを中止しました', 'AbortError');
+    const block = s.block(a, Math.min(n, s.frames - a));
+    await api('file', { id, name: `ambi_${String(k).padStart(4, '0')}.f32` }, block.buffer);
+    await yieldToPage();
+  }
+}
+
+/**
  * Render and convert. The caller has stopped the live loop and set the
  * stage up for export quality; this only draws, encodes and uploads.
  */
 export async function exportVr180(rt: ShowRuntime, o: Vr180ExportOptions): Promise<Vr180Result> {
   const W = o.eye;
   const total = Math.max(1, Math.round((o.to - o.from) * o.fps));
-  const { id, free } = await api<{ id: string; free: number }>('start', { name: o.name, fps: o.fps, quality: QUALITY });
+  const { id, free } = await api<{ id: string; free: number }>('start', {
+    name: o.name,
+    fps: o.fps,
+    quality: quality(W, o.fps),
+    // the spatial sound's order: the converter makes it APAC
+    ...(o.spatial ? { ambi: o.spatial.order } : {}),
+  });
   const cancel = () => api('cancel', { id }).catch(() => {});
   let converted = 0;
   const status = async () => {
@@ -165,11 +210,15 @@ export async function exportVr180(rt: ShowRuntime, o: Vr180ExportOptions): Promi
   const vr = new Vr180(rt, { eye: W });
   try {
     // the movie, plus the pieces waiting for the converter, plus some room to spare
-    const need = vr180BytesPerSecond(W) * (o.to - o.from) + (AHEAD + 1) * PIECE * W * W * 2 * o.fps * BPP / 8 + 1e9;
+    const need = vr180BytesPerSecond(W, o.fps) * (o.to - o.from) + (AHEAD + 1) * PIECE * W * W * 2 * o.fps * BPP / 8 + 1e9;
+    // (the spatial sound's raw samples, at most ~0.7 GB for a whole show, fit in the spare GB:
+    // the converter deletes each piece as it reads it)
     if (free < need) {
       const gb = (b: number) => (b / 1e9).toFixed(1);
       throw new Error(`ディスクの空きが足りません（空き ${gb(free)} GB・必要 約 ${gb(need)} GB）。範囲を短くするか、片目 4096 にするか、空きを作ってください`);
     }
+    // the spatial sound first, in pieces (a whole show is hundreds of MB), as raw float samples
+    if (o.spatial) await uploadSpatial(id, o.spatial, o.signal);
     if (o.music) await api('file', { id, name: 'audio.mp4' }, await audioFile(o.music, o.from, o.to));
 
     const sbs = W <= 4096;

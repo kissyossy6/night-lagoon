@@ -47,7 +47,8 @@ const click = async (p) => page.mouse.click(...p);
 // --- opens the lagoon as it is
 const start = await ed(() => ({ id: window.__venueEditor.doc().id, built: window.__venueEditor.builtIn(), n: window.__venueEditor.venue().groups.reduce((a, g) => a + g.positions.length, 0), parts: window.__venueEditor.doc().parts.length }));
 // 2026-11-08: the lagoon has its projector as a part (17 -> 18)
-ok(start.id === 'lagoon' && start.built && start.n === 372 && start.parts === 18, `opens the built-in lagoon read-only (${start.parts} parts, ${start.n} fixtures)`);
+ok(start.id === 'lagoon' && start.built && start.n === 372 && start.parts === 22, // 18 + the scenery (2026-11-12: bank, rail, two crowds)
+   `opens the built-in lagoon read-only (${start.parts} parts, ${start.n} fixtures)`);
 if (shots) await page.screenshot({ path: `${shots}/01-lagoon.png` });
 const cuesText = () => page.locator('.vn-cues-btn').innerText();
 ok((await cuesText()).includes('なし'), `the footer says no cue stops in the lagoon (${await cuesText()})`);

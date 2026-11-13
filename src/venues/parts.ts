@@ -1,6 +1,7 @@
 import { kind } from '../fixtures';
+import { groundAt } from './landscape';
 import { arc, band, line } from './shapes';
-import type { AudienceEdge, GroupDef, PyroSite, ScaleTier, ScreenDef, SeatDef, Selection, Vec3, Venue, WaterShape } from './types';
+import type { AudienceEdge, GroupDef, PyroSite, ScaleTier, Scenery, ScreenDef, SeatDef, Selection, Vec3, Venue, WaterShape } from './types';
 
 /**
  * A venue written as parts (docs/detailed-design.md 6.1): the file the venue
@@ -48,7 +49,22 @@ export type Part =
   /** 花火の台: a row of fireworks tubes; cues name it 'pyro:<site>'. */
   | { kind: 'pyro'; site: string; on: 'barge' | 'land'; tubes: number; from: [number, number]; to: [number, number]; height: number; note?: string }
   /** 客席: the front edge of the audience. */
-  | { kind: 'seats'; from: [number, number]; to: [number, number]; name?: string; note?: string };
+  | { kind: 'seats'; from: [number, number]; to: [number, number]; name?: string; note?: string }
+  /**
+   * 岸 (scenery): the bank and the land behind it. Without from / to it runs
+   * round the whole rim of the water; with them it is a straight bank, the
+   * land on its right seen from above (drawn left to right: the audience's
+   * side). `height` above the water, `width` of paving along the edge.
+   */
+  | { kind: 'shore'; from?: [number, number]; to?: [number, number]; height: number; width: number; name?: string; note?: string }
+  /** 手すり・柵 (scenery): along a line, `height` over the bank it stands on, posts at most `spacing` apart. */
+  | { kind: 'rail'; from: [number, number]; to: [number, number]; height: number; spacing: number; name?: string; note?: string }
+  /**
+   * 客 (scenery): people standing or sitting in a band `depth` deep behind
+   * the line (on its right, as a bank's land), `density` per m², facing the
+   * fixtures.
+   */
+  | { kind: 'crowd'; from: [number, number]; to: [number, number]; depth: number; density: number; pose: 'stand' | 'sit'; name?: string; note?: string };
 
 export type PartKind = Part['kind'];
 
@@ -63,7 +79,15 @@ export const PART_NAMES: Record<PartKind, string> = {
   projector: 'プロジェクター',
   pyro: '花火の台',
   seats: '客席',
+  shore: '岸',
+  rail: '手すり',
+  crowd: '客',
 };
+
+/** Parts that are only scenery (岸・手すり・客): drawn, never cued. */
+export function isSceneryPart(p: Part): p is Extract<Part, { kind: 'shore' | 'rail' | 'crowd' }> {
+  return p.kind === 'shore' || p.kind === 'rail' || p.kind === 'crowd';
+}
 
 export interface VenueDoc {
   id: string;
@@ -153,6 +177,21 @@ export function buildVenue(doc: VenueDoc): Venue {
   let audience: AudienceEdge | undefined;
   const screenNames: (string | undefined)[] = [];
   let projector: Extract<Part, { kind: 'projector' }> | undefined;
+  const scenery: Scenery = { shores: [], rails: [], crowds: [] };
+  doc.parts.forEach((p, n) => {
+    if (p.kind === 'shore') {
+      const rim = !p.from || !p.to;
+      scenery.shores.push({ rim, from: p.from ?? [0, 0], to: p.to ?? [0, 0], height: p.height, width: p.width });
+    } else if (p.kind === 'crowd') {
+      scenery.crowds.push({ from: p.from, to: p.to, depth: p.depth, density: p.density, pose: p.pose, seed: n });
+    }
+  });
+  // a rail stands on the bank under its middle (after all the banks are known)
+  for (const p of doc.parts) {
+    if (p.kind !== 'rail') continue;
+    const base = groundAt(scenery, doc.water, (p.from[0] + p.to[0]) / 2, (p.from[1] + p.to[1]) / 2) ?? 0;
+    scenery.rails.push({ from: p.from, to: p.to, height: p.height, spacing: p.spacing, base });
+  }
   for (const p of doc.parts) {
     if (isWaterPart(p)) {
       kind(p.fixture); // unknown kinds stop here, with the name
@@ -205,6 +244,7 @@ export function buildVenue(doc: VenueDoc): Venue {
     };
   }
   if (doc.wind) venue.wind = doc.wind;
+  if (scenery.shores.length || scenery.rails.length || scenery.crowds.length) venue.scenery = scenery;
   if (doc.patch) venue.patch = doc.patch;
   venue.seats = doc.cameras?.map(({ note: _, ...c }) => c) ?? autoCameras(venue);
   return venue;
@@ -227,12 +267,18 @@ export function autoCameras(v: Venue): SeatDef[] {
   const front = v.audience ? (v.audience.from[2] + v.audience.to[2]) / 2 : cz + span;
   const seatX = v.audience ? (v.audience.from[0] + v.audience.to[0]) / 2 : cx;
   const look: Vec3 = [cx, tall * 0.5, cz];
-  return [
+  // a camera that would sit inside a bank stands on it instead (at its
+  // height over the bank); cameras above the ground stay where they were
+  const lift = (s: SeatDef): SeatDef => {
+    const g = groundAt(v.scenery, v.water, s.pos[0], s.pos[2]);
+    return g !== null && s.pos[1] < g + 0.01 ? { ...s, pos: [s.pos[0], g + s.pos[1], s.pos[2]] } : s;
+  };
+  return ([
     { id: 'audience', label: '客席', pos: [seatX, Math.max(0.3, span * 0.08), front + span * 0.15], target: look, fov: 50 },
     { id: 'wide', label: '遠景', pos: [cx, span * 0.25, front + span * 0.8], target: look, fov: 44 },
     { id: 'eye', label: '目線', pos: [seatX, Math.max(0.05, span * 0.01), front], target: [cx, tall * 0.4, cz], fov: 54 },
     { id: 'left', label: '左', pos: [cx - span * 0.6, span * 0.08, front], target: look, fov: 48 },
     { id: 'right', label: '右', pos: [cx + span * 0.6, span * 0.08, front], target: look, fov: 48 },
     { id: 'aerial', label: '空撮', pos: [cx, span * 0.6, cz + span * 0.9], target: [cx, 0, cz], fov: 48 },
-  ];
+  ] as SeatDef[]).map(lift);
 }

@@ -4,6 +4,7 @@
  *
  *   node scripts/vr180.mjs still --eye=2048,4096 --t=63
  *   node scripts/vr180.mjs clip --eye=4096 --from=60 --to=70 --fps=30
+ *   node scripts/vr180.mjs still --eye=4096 --t=63 --venue=plaza --seat=near   (seat: near | an angle; --show=hanabi; --port=5199)
  */
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -26,7 +27,8 @@ for (const eye of eyes) {
   // the projector picture grows with the eye so the screen is not the soft spot
   const pw = Math.max(1536, Math.round((eye * 0.75) / 2) * 2);
   const ph = Math.round((pw * 288) / 1536 / 2) * 2;
-  await page.goto(`http://localhost:5199/tools/vr180.html?pw=${pw}&ph=${ph}${args.light ? `&light=${args.light}` : ''}`);
+  const extra = ['venue', 'seat', 'show'].filter((k) => args[k]).map((k) => `&${k}=${args[k]}`).join('');
+  await page.goto(`http://localhost:${args.port ?? 5199}/tools/vr180.html?pw=${pw}&ph=${ph}${args.light ? `&light=${args.light}` : ''}${extra}`);
   await page.waitForFunction(() => window.__vr, null, { timeout: 60000 });
   await page.evaluate(() => window.__vr.ready);
   for (const t of String(args.t ?? '63').split(',').map(Number)) {

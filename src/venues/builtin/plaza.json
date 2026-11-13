@@ -11,6 +11,8 @@
     { "kind": "line", "name": "後列", "group": "grid", "fixture": "floor-jet", "count": 12, "from": [-11, -5], "to": [11, -5] },
     { "kind": "line", "name": "首振りの列", "group": "whip", "fixture": "floor-whip", "count": 8, "from": [-6, 0], "to": [6, 0], "note": "ウィップの役" },
     { "kind": "single", "name": "真ん中", "group": "geyser", "fixture": "floor-jet", "at": [0, -2.5], "note": "ガイザーの役" },
-    { "kind": "seats", "name": "広場の前", "from": [-15, 13], "to": [15, 13], "note": "床の縁から 3 m 離れて立つ" }
+    { "kind": "seats", "name": "広場の前", "from": [-15, 13], "to": [15, 13], "note": "床の縁から 3 m 離れて立つ" },
+    { "kind": "shore", "height": 0.02, "width": 2, "note": "床噴水のまわりの舗装（床と同じ高さ。2 cm は水面と重ならないため）" },
+    { "kind": "crowd", "name": "広場の客", "from": [-14, 13.5], "to": [14, 13.5], "depth": 5, "density": 1, "pose": "stand", "note": "床の縁から 3.5 m 離れて、ゆったり立つ（1人 1 m²）" }
   ]
 }

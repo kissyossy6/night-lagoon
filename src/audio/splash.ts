@@ -56,6 +56,8 @@ interface Launch {
   amp: number;
   pan: number;
   big: boolean;
+  /** The output it goes to, for the spatial water (-1: stereo, panned). */
+  out: number;
 }
 
 /** How the water of one instant comes down over five neighbouring envelope steps. */
@@ -79,29 +81,73 @@ function panGains(pan: number): [number, number] {
   return [Math.cos(a), Math.sin(a)];
 }
 
+/** Groups whose water is heard (the others only add up to a hiss). */
+export const SPLASH_GROUPS: readonly string[] = Object.keys(GROUP);
+
 /**
  * Render the water sound of a compiled show. 'level' is the music's loudness
  * curve (analysis.ts, 0..1); without it nothing is ducked.
  */
 export function renderSplash(show: CompiledShow, layout: Layout, duration: number, sampleRate: number, level?: Curve): AudioBuffer {
+  return splash(show, layout, duration, sampleRate, level, null);
+}
+
+/**
+ * The water sound split into places, for the Vision Pro export (spatial.ts):
+ * 'place' gives each fixture's output (0..outputs-1, or -1 to leave it out),
+ * and each output is one mono channel of the buffer, to be heard from where
+ * its fixtures stand. Heard from 'listener' (x, z): the nearer water is the
+ * louder, as in the stereo sound (which hears it from the audience seat).
+ * Everything else (landing, ducking, launches, the lagoon's tail) is as in
+ * renderSplash. Only 'range' (s) is rendered (the buffer starts at its
+ * start); the levels are still set from the whole show.
+ */
+export function renderSplashPlaces(
+  show: CompiledShow,
+  layout: Layout,
+  duration: number,
+  sampleRate: number,
+  level: Curve | undefined,
+  listener: [number, number],
+  outputs: number,
+  place: (fx: Layout['fixtures'][number]) => number,
+  range: [number, number],
+): AudioBuffer {
+  return splash(show, layout, duration, sampleRate, level, { listener, outputs, place, range });
+}
+
+function splash(
+  show: CompiledShow,
+  layout: Layout,
+  duration: number,
+  sampleRate: number,
+  level: Curve | undefined,
+  places: { listener: [number, number]; outputs: number; place: (fx: Layout['fixtures'][number]) => number; range: [number, number] } | null,
+): AudioBuffer {
   const n = Math.ceil(duration * RATE) + 1;
-  // landing power per side, heavy and light
-  const heavy = [new Float32Array(n), new Float32Array(n)];
-  const light = [new Float32Array(n), new Float32Array(n)];
+  // landing power per output (left and right side, or each place), heavy and light
+  const outs = places ? places.outputs : 2;
+  const heavy = Array.from({ length: outs }, () => new Float32Array(n));
+  const light = Array.from({ length: outs }, () => new Float32Array(n));
   const launches: Launch[] = [];
+  const listener = places ? places.listener : LISTENER;
+  // a place gets half the power, as the centre does from each side in stereo
+  const PLACE_GAIN = Math.SQRT1_2;
 
   for (const fx of layout.fixtures) {
     const g = GROUP[fx.group];
     if (!g) continue;
+    const out = places ? places.place(fx) : -1;
+    if (places && (out < 0 || out >= outs)) continue;
     const [x, , z] = fx.position;
-    const d = Math.hypot(x - LISTENER[0], z - LISTENER[1]);
+    const d = places ? Math.max(1e-3, Math.hypot(x - listener[0], z - listener[1])) : Math.hypot(x - listener[0], z - listener[1]);
     const near = (40 / d) ** 2; // power falls with the square of the distance
     const pan = Math.max(-1, Math.min(1, x / 70));
     const [gl, gr] = panGains(pan);
     let prev = 0;
     for (let k = 0; k < n; k++) {
       const p = evaluate(show, fx.index, CH.pressure, k / RATE);
-      if (g.launch && p > 0.15 && prev <= 0.15) launches.push({ t: k / RATE, amp: g.launch * Math.sqrt(near), pan, big: fx.group === 'geyser' });
+      if (g.launch && p > 0.15 && prev <= 0.15) launches.push({ t: k / RATE, amp: g.launch * Math.sqrt(near), pan, big: fx.group === 'geyser', out });
       prev = p;
       if (p < 0.02) continue;
       // flow ~ sqrt(p), impact speed ~ sqrt(p): power ~ flow x speed^2
@@ -113,6 +159,11 @@ export function renderSplash(show: CompiledShow, layout: Layout, duration: numbe
         const i = Math.round(land + (j * spread) / 2);
         if (i < 0 || i >= n) continue;
         const w = e * (SPREAD[j + 2] as number);
+        if (places) {
+          heavy[out][i] += w * g.heavy * PLACE_GAIN * PLACE_GAIN;
+          light[out][i] += w * (1 - g.heavy) * PLACE_GAIN * PLACE_GAIN;
+          continue;
+        }
         heavy[0][i] += w * g.heavy * gl * gl;
         heavy[1][i] += w * g.heavy * gr * gr;
         light[0][i] += w * (1 - g.heavy) * gl * gl;
@@ -136,15 +187,17 @@ export function renderSplash(show: CompiledShow, layout: Layout, duration: numbe
 
   // normalise on a typical moment with water (not the loudest geyser hit),
   // and squeeze the range like the ear does: a few jets are not 30 dB below a full stage
+  // every output's heavy and light, in this order (left heavy, left light, right heavy, right light)
+  const all = (i: number) => (places ? Math.hypot(...heavy.flatMap((h, o) => [h[i] as number, light[o][i] as number])) : Math.hypot(heavy[0][i] as number, light[0][i] as number, heavy[1][i] as number, light[1][i] as number));
   const totals: number[] = [];
   for (let i = 0; i < n; i++) {
-    const a = Math.hypot(heavy[0][i] as number, light[0][i] as number, heavy[1][i] as number, light[1][i] as number);
+    const a = all(i);
     if (a > 1e-7) totals.push(a);
   }
   totals.sort((a, b) => a - b);
   const ref = totals[Math.floor(totals.length * 0.75)] ?? 1;
   for (let i = 0; i < n; i++) {
-    const a = Math.hypot(heavy[0][i] as number, light[0][i] as number, heavy[1][i] as number, light[1][i] as number) / ref;
+    const a = all(i) / ref;
     const f = a > 1e-9 ? a ** -SQUEEZE / ref : 0;
     for (const v of [...heavy, ...light]) v[i] = (v[i] as number) * f;
   }
@@ -159,17 +212,19 @@ export function renderSplash(show: CompiledShow, layout: Layout, duration: numbe
     duck[i] = (dy * LEVEL) / peak;
   }
 
-  const len = Math.ceil(duration * sampleRate);
-  const out = new AudioBuffer({ length: len, numberOfChannels: 2, sampleRate });
+  // the places render only their range: sample i is at (i + off) / sampleRate in the show
+  const off = places ? Math.round(places.range[0] * sampleRate) : 0;
+  const len = places ? Math.max(1, Math.ceil((places.range[1] - places.range[0]) * sampleRate)) : Math.ceil(duration * sampleRate);
+  const out = new AudioBuffer({ length: len, numberOfChannels: outs, sampleRate });
   const env = (v: Float32Array, i: number) => {
-    const x = (i / sampleRate) * RATE;
+    const x = ((i + off) / sampleRate) * RATE;
     const k = Math.min(n - 2, Math.floor(x));
     const f = x - k;
     return ((v[k] as number) * (1 - f) + (v[k + 1] as number) * f) * ((duck[k] as number) * (1 - f) + (duck[k + 1] as number) * f);
   };
   const lp = (fc: number) => 1 - Math.exp((-2 * Math.PI * fc) / sampleRate);
 
-  for (let ch = 0; ch < 2; ch++) {
+  for (let ch = 0; ch < outs; ch++) {
     const rand = rng(0x5eed + ch * 7919);
     const y = out.getChannelData(ch);
     const H = heavy[ch] as Float32Array;
@@ -215,7 +270,7 @@ export function renderSplash(show: CompiledShow, layout: Layout, duration: numbe
   const merged: Launch[] = [];
   for (const e of launches) {
     const last = merged[merged.length - 1];
-    if (last && e.t - last.t < 0.12) {
+    if (last && e.t - last.t < 0.12 && last.out === e.out) {
       const p2 = last.amp * last.amp + e.amp * e.amp;
       last.pan = (last.pan * last.amp + e.pan * e.amp) / (last.amp + e.amp);
       last.amp = Math.sqrt(p2);
@@ -227,11 +282,14 @@ export function renderSplash(show: CompiledShow, layout: Layout, duration: numbe
     const k = Math.min(n - 1, Math.floor(e.t * RATE));
     const gain = LEVEL * ((duck[k] as number) / LEVEL) ** 0.35 * Math.min(e.amp, 2) * LAUNCH;
     const [gl, gr] = panGains(e.pan);
-    const s0 = Math.floor(e.t * sampleRate);
+    const s0 = Math.floor(e.t * sampleRate) - off;
+    if (s0 >= len) continue;
     const decay = e.big ? 0.45 : 0.25;
     const m = Math.min(len - s0, Math.ceil(decay * 5 * sampleRate));
+    // a place's launch stays in its own output; in stereo it is panned
+    const P = places ? out.getChannelData(e.out) : null;
     const L = out.getChannelData(0);
-    const R = out.getChannelData(1);
+    const R = out.getChannelData(places ? 0 : 1);
     const aLo = lp(1800);
     const aHp = lp(250);
     const aThump = lp(180);
@@ -248,17 +306,22 @@ export function renderSplash(show: CompiledShow, layout: Layout, duration: numbe
       let v = (lo - hp) * 2.5 * Math.min(1, tt / 0.04) * Math.exp(-tt / decay);
       if (e.big) v += Math.sin(2 * Math.PI * 52 * tt * (1 - tt)) * Math.exp(-tt / 0.12) * 0.6 + th * 3 * Math.exp(-tt / 0.06);
       v *= gain * Math.min(1, j / 40);
+      if (P) {
+        if (s0 + j >= 0) P[s0 + j] += v * PLACE_GAIN;
+        continue;
+      }
       L[s0 + j] += v * gl;
       R[s0 + j] += v * gr;
     }
   }
 
   // an open lagoon: a little width and a short tail, then a soft limit
-  const dry = [Float32Array.from(out.getChannelData(0)), Float32Array.from(out.getChannelData(1))];
-  for (let ch = 0; ch < 2; ch++) {
+  // (a place has no other side: its own sound answers it)
+  const dry = Array.from({ length: outs }, (_, ch) => Float32Array.from(out.getChannelData(ch)));
+  for (let ch = 0; ch < outs; ch++) {
     const y = out.getChannelData(ch);
     const own = dry[ch] as Float32Array;
-    const other = dry[1 - ch] as Float32Array;
+    const other = (places ? own : dry[1 - ch]) as Float32Array;
     const d1 = Math.round((ch ? 0.031 : 0.023) * sampleRate);
     const d2 = Math.round((ch ? 0.067 : 0.053) * sampleRate);
     for (let i = d2; i < len; i++) y[i] += 0.18 * (other[i - d1] as number) + 0.12 * (own[i - d2] as number);

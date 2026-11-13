@@ -1,8 +1,9 @@
 import { kind } from '../../fixtures';
 import { theme, type Theme } from '../../ui/theme';
+import { crowdBand, crowdPeople, LAND_FAR, lineFrame, onLand, railPosts, rimOutline } from '../landscape';
 import { isWaterPart, partPositions, type Part, type VenueDoc } from '../parts';
 import type { Finding } from '../rules';
-import type { ScaleTier, WaterShape } from '../types';
+import type { ScaleTier, Venue, WaterShape } from '../types';
 
 /**
  * The venue editor's top view: the water from above, x to the right, z down
@@ -35,6 +36,8 @@ export interface ViewHost {
   tool(): Tool;
   /** A fireworks site's biggest size (号), 0 for none, null without seats. */
   pyroLimit(part: number): number | null;
+  /** The venue as built (its banks, for where people stand); undefined while it does not build. */
+  venue(): Venue | undefined;
 }
 
 /** Position snap per scale tier (m); angles snap to 15°. Alt turns both off. */
@@ -71,7 +74,8 @@ export function drawnFixtures(p: Part): Drawn[] {
 
 /** The ends of a part drawn as a line (rows, screens, seats). */
 function segment(p: Part): [Pt, Pt] | null {
-  if (p.kind === 'line' || p.kind === 'band' || p.kind === 'pyro' || p.kind === 'seats') return [p.from, p.to];
+  if (p.kind === 'line' || p.kind === 'band' || p.kind === 'pyro' || p.kind === 'seats' || p.kind === 'rail' || p.kind === 'crowd') return [p.from, p.to];
+  if (p.kind === 'shore') return p.from && p.to ? [p.from, p.to] : null;
   if (p.kind === 'screen') return [[p.center[0] - p.width / 2, p.center[1]], [p.center[0] + p.width / 2, p.center[1]]];
   if (p.kind === 'projector') return [p.at, p.aim];
   return null;
@@ -166,9 +170,12 @@ export class TopView {
     const pts: Pt[] = [];
     for (const p of doc.parts) {
       if (p.kind === 'pyro' && !all) continue;
+      // a bank runs to the horizon: frame the rest
+      if (p.kind === 'shore') continue;
       const seg = segment(p);
       if (seg) pts.push(...seg);
       if (p.kind === 'arc' || p.kind === 'ring') pts.push([p.center[0] - p.radius, p.center[1] - p.radius], [p.center[0] + p.radius, p.center[1] + p.radius]);
+      if (p.kind === 'crowd') pts.push(...crowdBand(p));
       for (const f of drawnFixtures(p)) pts.push(f.at);
     }
     const water = waterBox(doc.water);
@@ -194,10 +201,35 @@ export class TopView {
   private handles(p: Part): Handle[] {
     const T = this;
     switch (p.kind) {
+      case 'crowd': {
+        // the ends of the front line, and the back edge's middle for the depth
+        const { n } = lineFrame(p.from, p.to);
+        const mid: Pt = [(p.from[0] + p.to[0]) / 2 + n[0] * p.depth, (p.from[1] + p.to[1]) / 2 + n[1] * p.depth];
+        return [
+          { at: p.from, shape: 'square', drag: (q, to, f) => ((q as typeof p).from = T.snapPt(to, f).map(T.tidy) as Pt) },
+          { at: p.to, shape: 'square', drag: (q, to, f) => ((q as typeof p).to = T.snapPt(to, f).map(T.tidy) as Pt) },
+          {
+            at: mid,
+            shape: 'circle',
+            drag: (q, to, f) => {
+              const c = q as typeof p;
+              const d = (to[0] - c.from[0]) * n[0] + (to[1] - c.from[1]) * n[1];
+              c.depth = T.tidy(Math.max(T.snap(d, f), SNAP[T.host.doc().scale]));
+            },
+          },
+        ];
+      }
+      case 'shore':
+        if (!p.from || !p.to) return [];
+        return [
+          { at: p.from, shape: 'square', drag: (q, to, f) => ((q as typeof p).from = T.snapPt(to, f).map(T.tidy) as Pt) },
+          { at: p.to, shape: 'square', drag: (q, to, f) => ((q as typeof p).to = T.snapPt(to, f).map(T.tidy) as Pt) },
+        ];
       case 'line':
       case 'band':
       case 'pyro':
       case 'seats':
+      case 'rail':
         return [
           { at: p.from, shape: 'square', drag: (q, to, f) => ((q as typeof p).from = T.snapPt(to, f).map(T.tidy) as Pt) },
           { at: p.to, shape: 'square', drag: (q, to, f) => ((q as typeof p).to = T.snapPt(to, f).map(T.tidy) as Pt) },
@@ -266,6 +298,10 @@ export class TopView {
         const d = distToSeg(px, [this.X(seg[0][0]), this.Z(seg[0][1])], [this.X(seg[1][0]), this.Z(seg[1][1])]);
         if (d <= 5 && (!best || d + 1 < best.d)) best = { part: n, fixture: null, d: d + 1 };
       }
+      // areas: a crowd's band, a bank's paved strip (behind every line and dot)
+      const w = this.toWorld(px[0], px[1]);
+      const hit = p.kind === 'crowd' ? inPolygon(w, crowdBand(p)) : p.kind === 'shore' ? this.onStrip(p, doc.water, w) : false;
+      if (hit && (!best || best.d > 5.5)) best = { part: n, fixture: null, d: 5.5 };
     });
     const b = best as { part: number; fixture: number | null; d: number } | null;
     return b ? { part: b.part, fixture: b.fixture, handle: null } : null;
@@ -378,6 +414,154 @@ export class TopView {
     this.draw();
   }
 
+  /** Is [x, z] on a bank's paved strip (a rim's: between the water and the strip's outer edge)? */
+  private onStrip(p: Extract<Part, { kind: 'shore' }>, w: WaterShape, q: Pt): boolean {
+    // at least a few pixels wide, so a thin rim can still be picked
+    const width = Math.max(p.width, 5 / this.scale);
+    if (!p.from || !p.to) return w.kind !== 'infinite' && inPolygon(q, rimOutline(w, width)) && !inPolygon(q, rimOutline(w, 0));
+    const { n } = lineFrame(p.from, p.to);
+    const back = (r: Pt, d: number): Pt => [r[0] + n[0] * d, r[1] + n[1] * d];
+    return inPolygon(q, [p.from, p.to, back(p.to, width), back(p.from, width)]);
+  }
+
+  /** Banks: the land faintly to the horizon, the paved strip along the water, the edge line. */
+  private drawShores(doc: VenueDoc, sel: Selection) {
+    const c = this.ctx;
+    const t = this.t;
+    const path = (pts: Pt[]) => {
+      pts.forEach((q, i) => (i ? c.lineTo(this.X(q[0]), this.Z(q[1])) : c.moveTo(this.X(q[0]), this.Z(q[1]))));
+      c.closePath();
+    };
+    doc.parts.forEach((p, n) => {
+      if (p.kind !== 'shore') return;
+      const on = n === sel.part;
+      const hover = this.hover?.part === n && !on;
+      const w = doc.water;
+      c.fillStyle = t.vnSeat;
+      if (!p.from || !p.to) {
+        if (w.kind === 'infinite') return;
+        // the land: everything but the water (even-odd)
+        c.globalAlpha = 0.06;
+        c.beginPath();
+        c.rect(0, 0, this.w, this.h);
+        path(rimOutline(w, 0));
+        c.fill('evenodd');
+        c.globalAlpha = on || hover ? 0.4 : 0.22;
+        c.beginPath();
+        path(rimOutline(w, p.width));
+        path(rimOutline(w, 0).reverse());
+        c.fill('evenodd');
+        c.globalAlpha = 1;
+        c.strokeStyle = on ? t.vnSel : t.vnSeat;
+        c.lineWidth = on ? 2 : 1.5;
+        c.beginPath();
+        path(rimOutline(w, 0));
+        c.stroke();
+        return;
+      }
+      const { n: nn } = lineFrame(p.from, p.to);
+      const back = (q: Pt, d: number): Pt => [q[0] + nn[0] * d, q[1] + nn[1] * d];
+      c.globalAlpha = 0.06;
+      c.beginPath();
+      path([p.from, p.to, back(p.to, LAND_FAR), back(p.from, LAND_FAR)]);
+      c.fill();
+      c.globalAlpha = on || hover ? 0.4 : 0.22;
+      c.beginPath();
+      path([p.from, p.to, back(p.to, p.width), back(p.from, p.width)]);
+      c.fill();
+      c.globalAlpha = 1;
+      c.strokeStyle = on ? t.vnSel : t.vnSeat;
+      c.lineWidth = on ? 2 : 1.5;
+      c.beginPath();
+      c.moveTo(this.X(p.from[0]), this.Z(p.from[1]));
+      c.lineTo(this.X(p.to[0]), this.Z(p.to[1]));
+      c.stroke();
+      // which side is land: small ticks into it
+      const { len, t: dir } = lineFrame(p.from, p.to);
+      const step = Math.max(len / 40, 18 / this.scale);
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let u = step / 2; u < len; u += step) {
+        const q: Pt = [p.from[0] + dir[0] * u, p.from[1] + dir[1] * u];
+        c.moveTo(this.X(q[0]), this.Z(q[1]));
+        c.lineTo(this.X(q[0]) + nn[0] * 6, this.Z(q[1]) + nn[1] * 6);
+      }
+      c.stroke();
+    });
+  }
+
+  /** A rail: its line and posts; a crowd: its band and everyone in it (people over the water as crosses). */
+  private drawScenery(p: Part, n: number, on: boolean, hover: boolean) {
+    const c = this.ctx;
+    const t = this.t;
+    const font = (px: number) => `${px}px ${t.fontCanvas}`;
+    if (p.kind === 'rail') {
+      c.strokeStyle = on ? t.vnSel : t.vnText;
+      c.globalAlpha = on || hover ? 1 : 0.75;
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(this.X(p.from[0]), this.Z(p.from[1]));
+      c.lineTo(this.X(p.to[0]), this.Z(p.to[1]));
+      c.stroke();
+      if (p.spacing * this.scale >= 5) {
+        c.fillStyle = c.strokeStyle;
+        for (const q of railPosts(p)) c.fillRect(this.X(q[0]) - 1.5, this.Z(q[1]) - 1.5, 3, 3);
+      }
+      c.globalAlpha = 1;
+      return;
+    }
+    if (p.kind !== 'crowd') return;
+    const band = crowdBand(p);
+    c.beginPath();
+    band.forEach((q, i) => (i ? c.lineTo(this.X(q[0]), this.Z(q[1])) : c.moveTo(this.X(q[0]), this.Z(q[1]))));
+    c.closePath();
+    c.fillStyle = t.vnSeat;
+    c.globalAlpha = on || hover ? 0.22 : 0.12;
+    c.fill();
+    c.globalAlpha = 1;
+    c.setLineDash([4, 3]);
+    c.strokeStyle = on ? t.vnSel : t.vnSeat;
+    c.lineWidth = 1;
+    c.stroke();
+    c.setLineDash([]);
+    const people = crowdPeople({ ...p, seed: n }, 0, [0, 0]);
+    const v = this.host.venue();
+    const doc = this.host.doc();
+    const r = Math.max(0.8, 0.2 * this.scale);
+    // dots only while they can be told apart
+    if (people.length && 0.5 / Math.sqrt(p.density) * this.scale >= 1.2) {
+      for (const q of people) {
+        const x = this.X(q.x);
+        const y = this.Z(q.z);
+        if (x < -5 || y < -5 || x > this.w + 5 || y > this.h + 5) continue;
+        if (!onLand(v?.scenery, doc.water, q.x, q.z)) {
+          c.strokeStyle = t.vnStop;
+          c.lineWidth = 1;
+          c.beginPath();
+          c.moveTo(x - 2, y - 2);
+          c.lineTo(x + 2, y + 2);
+          c.moveTo(x + 2, y - 2);
+          c.lineTo(x - 2, y + 2);
+          c.stroke();
+          continue;
+        }
+        c.fillStyle = on ? t.vnSel : t.vnText;
+        c.globalAlpha = q.sit ? 0.55 : 0.8;
+        c.beginPath();
+        c.arc(x, y, r, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+    const mx = band.reduce((a, q) => a + q[0], 0) / 4;
+    const mz = band.reduce((a, q) => a + q[1], 0) / 4;
+    c.fillStyle = on ? t.vnSel : t.vnText;
+    c.font = font(11);
+    c.textAlign = 'center';
+    c.fillText(`客${p.name ? `「${p.name}」` : ''} ${people.length.toLocaleString('ja-JP')}人`, this.X(mx), this.Z(mz) + 4);
+    c.textAlign = 'left';
+  }
+
   // ---------------------------------------------------------------- draw
   draw() {
     const c = this.ctx;
@@ -388,12 +572,14 @@ export class TopView {
     c.fillStyle = t.vnBg;
     c.fillRect(0, 0, this.w, this.h);
     this.drawWater(doc.water);
+    this.drawShores(doc, sel);
     this.drawGrid();
     const font = (px: number) => `${px}px ${t.fontCanvas}`;
     doc.parts.forEach((p, n) => {
       const on = n === sel.part;
       const hover = this.hover?.part === n && !on;
-      if (p.kind === 'seats') {
+      if (p.kind === 'rail' || p.kind === 'crowd') this.drawScenery(p, n, on, hover);
+      else if (p.kind === 'seats') {
         c.setLineDash([6, 4]);
         c.strokeStyle = on ? t.vnSel : t.vnSeat;
         c.lineWidth = 1.5;
@@ -619,7 +805,7 @@ export class TopView {
 /** Moves a whole part by [dx, dz]. */
 export function movePart(p: Part, [dx, dz]: Pt) {
   const add = (q: Pt): Pt => [Math.round((q[0] + dx) * 1e6) / 1e6, Math.round((q[1] + dz) * 1e6) / 1e6];
-  if ('from' in p) {
+  if ('from' in p && p.from && p.to) {
     p.from = add(p.from);
     p.to = add(p.to);
   }
@@ -660,4 +846,15 @@ function waterBox(w: WaterShape): Pt[] | null {
   if (w.kind === 'infinite') return null;
   if (w.kind === 'circle') return [[-w.radius, -w.radius], [w.radius, w.radius]];
   return [[-w.width / 2, -w.depth / 2], [w.width / 2, w.depth / 2]];
+}
+
+/** Is p inside the polygon (even-odd)? */
+function inPolygon(p: Pt, poly: Pt[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if (a[1] > p[1] !== b[1] > p[1] && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1] || 1e-12) + a[0]) inside = !inside;
+  }
+  return inside;
 }

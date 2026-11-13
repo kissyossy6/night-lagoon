@@ -1,0 +1,14 @@
+# 2026-11-12 23:20〜23:44、M2 Pro（GPU 16 コア）、headless Chrome、一時的な Vite :5399（他のセッションが同時に動いていて load average 3〜8）
+# 画質ごとの描く倍率：高 1.0、中 0.85、低 0.6（縦横それぞれ。src/show/main.ts の TIERS）
+show=lagoon, median of 3 rounds (60 frames each)
+1280x720 (0.92 MP) t=63: high 22.1 | high/gfx=off 17.2 | medium 17.8 | medium/gfx=off 6.2 | low 5.0
+1280x720 (0.92 MP) t=178.6: high 13.8 | high/gfx=off 10.2 | medium 9.0 | medium/gfx=off 12.6 | low 11.7
+1920x1080 (2.07 MP) t=63: high 24.3 | high/gfx=off 18.3 | medium 15.0 | medium/gfx=off 11.5 | low 11.6
+1920x1080 (2.07 MP) t=178.6: high 31.3 | high/gfx=off 22.6 | medium 22.7 | medium/gfx=off 18.4 | low 17.5
+2560x1440 (3.69 MP) t=63: high 29.1 | high/gfx=off 24.1 | medium 20.8 | medium/gfx=off 23.0 | low 18.8
+2560x1440 (3.69 MP) t=178.6: high 41.7 | high/gfx=off 31.6 | medium 32.0 | medium/gfx=off 23.9 | low 22.6
+3840x1824 (7.00 MP) t=63: high 41.2 | high/gfx=off 36.3 | medium 35.2 | medium/gfx=off 29.9 | low 30.5
+3840x1824 (7.00 MP) t=178.6: high 61.8 | high/gfx=off 42.9 | medium 46.6 | medium/gfx=off 40.1 | low 36.2
+show=hanabi, median of 3 rounds (60 frames each)
+1280x720 (0.92 MP) t=205.99: high 29.8 | high/gfx=off 22.9 | medium 22.1 | medium/gfx=off 18.3 | low 15.7
+2560x1440 (3.69 MP) t=205.99: high 56.0 | high/gfx=off 40.8 | medium 40.8 | medium/gfx=off 39.2 | low 34.9

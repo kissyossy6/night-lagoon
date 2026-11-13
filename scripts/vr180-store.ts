@@ -15,8 +15,8 @@ import type { Plugin } from 'vite';
  * it is in. So the intermediate files never sit on disk all at once (a whole
  * show at 7680 per eye would be over 10 GB of them).
  *
- *   POST /__vr180/start?name=a.mov&fps=30&quality=0.85 → { id, free }
- *   POST /__vr180/file?id=&name=audio.mp4|0000_sbs.mp4|0000_L0.mp4… body is the file
+ *   POST /__vr180/start?name=a.mov&fps=30&quality=0.85[&ambi=3] → { id, free }
+ *   POST /__vr180/file?id=&name=audio.mp4|ambi_0000.f32|0000_sbs.mp4|0000_L0.mp4… body is the file
  *   POST /__vr180/ready?id=&k=0      piece k is complete
  *   POST /__vr180/end?id=            no more pieces
  *   GET  /__vr180/status?id=         → { state, frames, output, bytes, free, error }
@@ -24,6 +24,11 @@ import type { Plugin } from 'vite';
  *   POST /__vr180/reveal?id=         show the movie in the Finder
  *
  * Movies land in exports/visionpro/.
+ *
+ * With ambi=N (1-3), the sound is spatial (src/audio/spatial.ts, 追記46b):
+ * ambi_0000.f32… hold Ambisonics of order N (raw float32, interleaved, ACN /
+ * SN3D, 48 kHz), which join encodes as APAC; audio.mp4 (the stereo music)
+ * goes in as its fallback track.
  */
 
 interface Job {
@@ -35,7 +40,7 @@ interface Job {
   log: string;
 }
 
-const PIECE = /^(audio|\d{4}_(sbs|L0|L1|R0|R1))\.mp4$/;
+const PIECE = /^((audio|\d{4}_(sbs|L0|L1|R0|R1))\.mp4|ambi_\d{4}\.f32)$/;
 
 export function vr180Store(root: string): Plugin {
   const outDir = resolve(root, 'exports/visionpro');
@@ -61,7 +66,8 @@ export function vr180Store(root: string): Plugin {
     const name = safeName(q.get('name') ?? '');
     const fps = Number(q.get('fps') ?? 30);
     const quality = Number(q.get('quality') ?? 0.85);
-    if (!name || !(fps > 0 && fps <= 120) || !(quality > 0 && quality <= 1)) throw new Error('bad request');
+    const ambi = q.has('ambi') ? Number(q.get('ambi')) : 0;
+    if (!name || !(fps > 0 && fps <= 120) || !(quality > 0 && quality <= 1) || ![0, 1, 2, 3].includes(ambi)) throw new Error('bad request');
     await mkdir(outDir, { recursive: true });
     await ensureJoin();
     const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -70,7 +76,7 @@ export function vr180Store(root: string): Plugin {
     // never overwrite: a second "a.mov" becomes "a-2.mov"
     let output = join(outDir, name);
     for (let k = 2; await stat(output).then(() => true, () => false); k++) output = join(outDir, name.replace(/\.mov$/, `-${k}.mov`));
-    const proc = spawn(bin, [output, '--segments', dir, '--fps', String(fps), '--quality', String(quality)]);
+    const proc = spawn(bin, [output, '--segments', dir, '--fps', String(fps), '--quality', String(quality), ...(ambi ? ['--ambisonics', String(ambi)] : [])]);
     const job: Job = { dir, output, proc, state: 'running', frames: 0, log: '' };
     const read = (d: Buffer) => {
       job.log = (job.log + d.toString()).slice(-4000);

@@ -2,8 +2,9 @@ import { kind, NOZZLES } from '../fixtures';
 import { sizeRow, MAX_SIZE, MIN_SIZE } from '../pyro/shells';
 import { audienceDistance, maxSizeAt } from '../pyro/schedule';
 import type { Layout } from '../show/layout';
+import { crowdBand, crowdPeople, groundAt, lineFrame, MAX_PEOPLE, onLand, onShore, sdWater, shoreEdgeDistance } from './landscape';
 import { isWaterPart, PART_NAMES, partPositions, placedAt, type Part, type VenueDoc } from './parts';
-import type { ScaleTier, Vec3, Venue, WaterShape } from './types';
+import type { Pt2, ScaleTier, Vec3, Venue, WaterShape } from './types';
 
 /**
  * The venue editor's rules (docs/detailed-design.md 6.3, dev-plan F), in
@@ -31,7 +32,29 @@ export interface Finding {
   part?: number;
 }
 
-export type RuleId = 'outside' | 'ground' | 'overlap' | 'samespot' | 'close' | 'pyroSafety' | 'spray' | 'burst' | 'spill' | 'pump' | 'heavy' | 'noSeats' | 'build' | 'projector';
+export type RuleId =
+  | 'outside'
+  | 'ground'
+  | 'overlap'
+  | 'samespot'
+  | 'close'
+  | 'pyroSafety'
+  | 'spray'
+  | 'burst'
+  | 'spill'
+  | 'pump'
+  | 'heavy'
+  | 'noSeats'
+  | 'build'
+  | 'projector'
+  | 'rim'
+  | 'crowdWater'
+  | 'crowdFixture'
+  | 'crowdPyro'
+  | 'noRail'
+  | 'noShore'
+  | 'railWater'
+  | 'seatGround';
 
 /** The rules' names, for the list and the docs (step in brackets). */
 export const RULE_NAMES: Record<RuleId, string> = {
@@ -49,6 +72,14 @@ export const RULE_NAMES: Record<RuleId, string> = {
   heavy: '描画の重さ',
   noSeats: '客席が無い',
   projector: 'プロジェクター',
+  rim: '縁の無い水面',
+  crowdWater: '客が水の上',
+  crowdFixture: '客が機材の上',
+  crowdPyro: '客が保安距離の内側',
+  noRail: '手すりの無い水際',
+  noShore: '岸が無い',
+  railWater: '手すりが水の上',
+  seatGround: 'カメラが地面の中',
 };
 
 /** Farthest a lit screen may stand from where the projector faces (deg) before it reads as not aimed at it. 仮. */
@@ -74,6 +105,16 @@ export const PUMP_BUDGET: Record<ScaleTier, number> = { desk: 0.3, garden: 5, pl
 /** Spray particles at 'high' quality that still run smoothly (仮: the lagoon's 394,800 and a little). */
 export const SPRAY_BUDGET = 450_000;
 
+/**
+ * 手すりの無い水際 (仮): people this close to the water's edge (m), on a bank
+ * this high over the water or higher (or anywhere at the lagoon's scale, deep
+ * water), want a rail between them and the water, no further from them than
+ * the edge plus RAIL_SLACK.
+ */
+export const RAIL_EDGE: Record<ScaleTier, number> = { desk: 0.05, garden: 0.5, plaza: 2, lagoon: 3 };
+export const RAIL_DROP = 0.3;
+export const RAIL_SLACK: Record<ScaleTier, number> = { desk: 0.03, garden: 0.3, plaza: 1, lagoon: 1 };
+
 // ----------------------------------------------------------------- facts
 interface Fx {
   part: number;
@@ -91,6 +132,7 @@ const round2 = (v: number) => Math.round(v * 100) / 100;
 export function partLabel(p: Part): string {
   if (p.kind === 'pyro') return `花火の台「${p.site}」`;
   if (p.kind === 'single') return `1台（${kind(p.fixture).name}）`;
+  if (p.kind === 'shore' && (!p.from || !p.to) && !p.name) return '岸（縁ぜんぶ）';
   const name = 'name' in p && p.name ? `「${p.name}」` : '';
   return `${PART_NAMES[p.kind]}${name}`;
 }
@@ -374,8 +416,146 @@ export function checkVenue(doc: VenueDoc, venue: Venue): Finding[] {
   // ---- 黄: プロジェクター (it only lights; no 止める or 赤)
   out.push(...projectorFindings(doc, venue));
 
+  // ---- 景色: 岸・手すり・客
+  out.push(...sceneryFindings(doc, venue, fx, limits));
+
   const order: Record<Level, number> = { stop: 0, danger: 1, note: 2 };
   return out.sort((a, b) => order[a.level] - order[b.level]);
+}
+
+/** Distance from p to the polygon (0 inside). */
+function toPolygon(p: Pt2, poly: Pt2[]): number {
+  let inside = false;
+  let d = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if (a[1] > p[1] !== b[1] > p[1] && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1] || 1e-12) + a[0]) inside = !inside;
+    d = Math.min(d, toSegment(p, a, b));
+  }
+  return inside ? 0 : d;
+}
+
+function toSegment(p: Pt2, a: Pt2, b: Pt2): number {
+  const dx = b[0] - a[0];
+  const dz = b[1] - a[1];
+  const l = dx * dx + dz * dz || 1e-12;
+  const k = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / l));
+  return Math.hypot(p[0] - a[0] - k * dx, p[1] - a[1] - k * dz);
+}
+
+const nameOf = (p: Part) => ('name' in p && p.name ? `「${p.name}」` : '');
+
+/**
+ * The scenery (岸・手すり・客, 2026-11-12):
+ *   止める  a bank round the rim of water that has none; people over the
+ *           water or on top of fixtures
+ *   赤      people inside a fireworks site's safety distance, or where a
+ *           fixture's spray lands (nearer than the seats' line, which has
+ *           its own warning)
+ *   黄      a waterside crowd with no rail, people or a rail with no bank
+ *           under them, a camera inside a bank, too many people to draw
+ */
+function sceneryFindings(doc: VenueDoc, venue: Venue, fx: Fx[], limits: Map<number, { size: number; distance: number }>): Finding[] {
+  const out: Finding[] = [];
+  const w = doc.water;
+  const sc = venue.scenery;
+  const mid = (a: Pt2, b: Pt2): [number, number] => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  doc.parts.forEach((p, n) => {
+    if (p.kind === 'shore' && (!p.from || !p.to) && w.kind === 'infinite') {
+      out.push({ rule: 'rim', level: 'stop', part: n, text: `${partLabel(p)}：水面が「果てなし」なので縁がありません。水面の型を変えるか、岸を線で引いてください（始めと終わりを入れる）。` });
+    }
+    if (p.kind === 'rail') {
+      const [x, z] = mid(p.from, p.to);
+      if (!onLand(sc, w, x, z)) out.push({ rule: 'railWater', level: 'note', part: n, at: [x, z], text: `手すり${nameOf(p)}が水の上にあります。岸の上に置くと、岸の高さに立ちます。` });
+      else if (groundAt(sc, w, x, z) === null) out.push({ rule: 'noShore', level: 'note', part: n, at: [x, z], text: `手すり${nameOf(p)}の下に岸がありません。3D では水面の高さに立って見えます（部品「岸」を足すと地面が描かれます）。` });
+    }
+  });
+
+  let people = 0;
+  doc.parts.forEach((p, n) => {
+    if (p.kind !== 'crowd') return;
+    const label = `客${nameOf(p)}`;
+    const band = crowdBand(p);
+    const all = crowdPeople({ ...p, seed: n }, 0, [0, 0], Infinity);
+    people += all.length;
+    const wet = all.filter((q) => !onLand(sc, w, q.x, q.z));
+    if (wet.length) {
+      out.push({ rule: 'crowdWater', level: 'stop', part: n, at: [wet[0].x, wet[0].z], text: `${label}の ${wet.length} 人が水の上にいます（${all.length} 人のうち）。岸の上か、水の外に置いてください。` });
+    }
+    const bare = all.filter((q) => groundAt(sc, w, q.x, q.z) === null && onLand(sc, w, q.x, q.z));
+    if (bare.length) {
+      out.push({ rule: 'noShore', level: 'note', part: n, at: [bare[0].x, bare[0].z], text: `${label}の足元に岸がありません（${bare.length} 人）。3D では水面の高さに立って見えます（部品「岸」を足すと地面が描かれます）。` });
+    }
+    // fixtures in the band (or within half their spacing of it)
+    const under = fx.filter((f) => toPolygon([f.x, f.z], band) < kind(f.kind).place.spacing / 2);
+    if (under.length) {
+      out.push({ rule: 'crowdFixture', level: 'stop', part: n, at: [under[0].x, under[0].z], text: `${label}の中に機材が ${under.length} 台あります（${partLabel(doc.parts[under[0].part])}など）。` });
+    }
+    // the fireworks' safety distance, from the people themselves
+    doc.parts.forEach((q, m) => {
+      if (q.kind !== 'pyro') return;
+      const tubes = partPositions(q);
+      if (!tubes.length) return;
+      const d = Math.min(...tubes.map((t) => toPolygon([t[0], t[2]], band)));
+      const lim = limits.get(m);
+      const size = lim ? lim.size : MAX_SIZE;
+      const smallest = sizeRow(MIN_SIZE).safety;
+      if (d < smallest) {
+        out.push({ rule: 'crowdPyro', level: 'danger', part: n, at: mid(p.from, p.to), text: `${label}が${partLabel(q)}から ${round1(d)} m。一番小さい${MIN_SIZE}号でも保安距離は ${smallest} m 要ります。` });
+      } else if (size > 0 && sizeRow(size).safety > d) {
+        out.push({ rule: 'crowdPyro', level: 'danger', part: n, at: mid(p.from, p.to), text: `${partLabel(q)}の${size}号の保安距離 ${sizeRow(size).safety} m の内側に${label}がいます（${round1(d)} m）。客を下げるか、玉を小さくしてください。` });
+      }
+    });
+    // spray: nearer than the seats' line (which has its own warning)
+    let worst: { f: Fx; d: number } | null = null;
+    for (const f of fx) {
+      const h = apex(f.kind);
+      const d = toPolygon([f.x, f.z], band);
+      const aud = venue.audience ? audienceDistance([f.x, 0, f.z], asLayout(venue)) : Infinity;
+      if (d < reach(f.kind) + SPRAY_MARGIN * h && d < aud - 1e-6 && (!worst || d < worst.d)) worst = { f, d };
+    }
+    if (worst) {
+      const k = kind(worst.f.kind);
+      out.push({ rule: 'spray', level: 'danger', part: n, at: [worst.f.x, worst.f.z], text: `${label}に${k.name}（${partLabel(doc.parts[worst.f.part])}）の水がかかります（客まで ${round1(worst.d)} m・届くのは ${round1(reach(worst.f.kind) + SPRAY_MARGIN * apex(worst.f.kind))} m）。` });
+    }
+    // 手すりの無い水際
+    const rails = doc.parts.filter((q): q is Extract<Part, { kind: 'rail' }> => q.kind === 'rail');
+    const { t, len } = lineFrame(p.from, p.to);
+    const steps = Math.max(2, Math.min(80, Math.ceil(len / Math.max(RAIL_EDGE[doc.scale] / 2, 1e-3))));
+    let open = 0;
+    let at: [number, number] | undefined;
+    for (let i = 0; i <= steps; i++) {
+      const q: Pt2 = [p.from[0] + t[0] * len * (i / steps), p.from[1] + t[1] * len * (i / steps)];
+      let edge = Infinity;
+      let drop = 0;
+      for (const s of sc?.shores ?? []) {
+        if (!onShore(s, w, q[0], q[1])) continue;
+        edge = Math.min(edge, shoreEdgeDistance(s, w, q[0], q[1]));
+        drop = Math.max(drop, s.height);
+      }
+      if (edge === Infinity && w.kind !== 'infinite') edge = sdWater(w, q[0], q[1]);
+      if (!(edge >= 0 && edge <= RAIL_EDGE[doc.scale])) continue;
+      if (doc.scale !== 'lagoon' && drop < RAIL_DROP) continue;
+      if (rails.some((r) => toSegment(q, r.from, r.to) <= edge + RAIL_SLACK[doc.scale])) continue;
+      open++;
+      at ??= q;
+    }
+    if (open) {
+      out.push({ rule: 'noRail', level: 'note', part: n, at, text: `${label}の前の水際（${Math.round((open / (steps + 1)) * 100)}%）に手すりがありません。部品「手すり」を水際に引いてください。` });
+    }
+  });
+  if (people > MAX_PEOPLE) {
+    out.push({ rule: 'heavy', level: 'note', text: `客が ${people.toLocaleString('ja-JP')} 人で、描くのは ${MAX_PEOPLE.toLocaleString('ja-JP')} 人までです（残りは描きません）。` });
+  }
+  // a camera under the bank's top sees the inside of the ground
+  for (const s of venue.seats) {
+    const g = groundAt(sc, w, s.pos[0], s.pos[2]);
+    if (g !== null && s.pos[1] < g + 0.01) {
+      out.push({ rule: 'seatGround', level: 'note', at: [s.pos[0], s.pos[2]], text: `カメラ「${s.label}」（高さ ${round2(s.pos[1])} m）が岸の地面（${round2(g)} m）より低い所にあります。岸を低くするか、カメラを水の上に出してください。` });
+    }
+  }
+  return out;
 }
 
 /**

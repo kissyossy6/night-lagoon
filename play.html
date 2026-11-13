@@ -56,6 +56,11 @@
               <button data-v="on" aria-pressed="true">出す</button>
               <button data-v="off" aria-pressed="false">隠す</button>
             </span>
+            <h4>景色（Kキー）</h4>
+            <span class="seg" id="scenery">
+              <button data-v="on" aria-pressed="true">出す</button>
+              <button data-v="off" aria-pressed="false">隠す</button>
+            </span>
             <h4>画質</h4>
             <span class="seg" id="quality">
               <button data-v="auto">自動</button>
@@ -86,6 +91,7 @@
               <select id="export-angle" aria-label="撮る場所"></select></label>
             <label class="flat-only"><input type="radio" name="camera" value="auto" /> おまかせ（いろいろな角度で自動）</label>
             <p class="hint flat-only">音楽の盛り上がりに合わせてカットを切り替え、カメラを動かします。物語の場面は水幕を正面から撮ります</p>
+            <p class="hint vr-only">「近い席」は会場の形から決めた、人がいられるいちばん近い場所（客席の縁より前に出ない・飛沫が掛からない・目は人の高さ）。近いほど両目の立体感が出ます</p>
           </fieldset>
           <fieldset>
             <legend>範囲</legend>
@@ -114,6 +120,12 @@
                 <option value="60">60 fps</option>
               </select>
             </div>
+          </fieldset>
+          <fieldset class="vr-only">
+            <legend>音</legend>
+            <label><input type="radio" name="sound" value="spatial" checked /> 空間（Vision Pro）</label>
+            <label><input type="radio" name="sound" value="stereo" /> ステレオ</label>
+            <p class="hint">空間：音楽は舞台の左右から、花火は空の破裂した所から、水音は噴水から聞こえます。頭を回しても音は会場に残ります。ステレオ：頭と一緒に回る、今までの音</p>
           </fieldset>
           <p class="note" id="export-note"></p>
         </div>

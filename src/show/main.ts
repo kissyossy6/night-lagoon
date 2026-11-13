@@ -8,9 +8,11 @@ import { mixSplash, renderSplash } from '../audio/splash';
 import { DEFAULT_LEVELS, LEVEL_MAX, OUTPUT_CEILING, SOUND_LAYERS, type SoundLayer } from '../audio/levels';
 import { limit } from '../audio/limit';
 import { renderPyro } from '../audio/pyro';
+import { spatialMix, type SpatialInput } from '../audio/spatial';
 import { buildPyroTest } from './pyrotest';
 import { exportVideo } from '../export/video';
-import { exportVr180, vr180BytesPerSecond, vr180Projector } from '../export/vr180-video';
+import { exportVr180, VR180_MAX_FPS, vr180BytesPerSecond, vr180Projector } from '../export/vr180-video';
+import { disparityPx, nearSeat, seatFacts } from './near-seat';
 import { ANGLES, ANGLE_NAMES, applyView, directShow, screenOpening, useVenueAngles, viewAt, type AngleName } from './cameras';
 import { getVenue } from '../venues';
 import { parseGraphics } from './graphics';
@@ -40,6 +42,7 @@ const EDITOR_STORE_KEY = 'water-show-editor:v1';
  *   perf  time 60 frames, report window.__perf (ms/frame)
  *   venue play the show in another venue (built-in or made in venue.html)
  *   fixtures=0  hide the fixtures' bodies (表示 → 機材; shown by default)
+ *   scenery=0   hide the venue's banks, rails and audience (表示 → 景色; shown by default)
  */
 
 const q = new URLSearchParams(location.search);
@@ -78,6 +81,8 @@ const TIERS: Record<Quality, Tier> = {
   low: { quality: 'low', pixelRatio: 0.6, reflection: 0.35 },
   // stage 7 H1: exports only (three times the drops, a full-size reflection)
   export: { quality: 'export', pixelRatio: 1, reflection: 1 },
+  // 46d: Vision Pro walking (src/xr/); here only when asked for with ?quality=vr
+  vr: { quality: 'vr', pixelRatio: 0.6, reflection: 0.25 },
 };
 const fixedQuality = q.get('quality') as Quality | null;
 let tier = TIERS[fixedQuality ?? 'high'];
@@ -89,6 +94,8 @@ rt.setLighting((q.get('light') as LightingMode) ?? 'real');
 if (q.has('gfx')) rt.setGraphics(parseGraphics(q.get('gfx')));
 // the fixtures' bodies (bodies.ts): shown by default, ?fixtures=0 hides them
 if (q.get('fixtures') === '0' || q.get('fixtures') === 'off') rt.setFixtures(false);
+// the venue's scenery (scenery.ts): shown by default, ?scenery=0 hides it
+if (q.get('scenery') === '0' || q.get('scenery') === 'off') rt.setScenery(false);
 
 function loadShow(): ShowFile {
   const file = loadShowFile();
@@ -346,9 +353,9 @@ function pressed(group: string, value: string) {
     b.setAttribute('aria-pressed', String(b.dataset.v === value));
   }
   if (group === 'cam') $('cam-now').textContent = CAM_LABEL(value as CamMode);
-  if (group === 'light' || group === 'quality' || group === 'fixtures') {
+  if (group === 'light' || group === 'quality' || group === 'fixtures' || group === 'scenery') {
     const on = (g: string) => document.querySelector<HTMLButtonElement>(`#${g} button[aria-pressed="true"]`)?.textContent ?? '';
-    $('view-now').textContent = `${on('light')}・${on('quality')}${document.querySelector('#fixtures button[data-v="off"][aria-pressed="true"]') ? '・機材なし' : ''}`;
+    $('view-now').textContent = `${on('light')}・${on('quality')}${document.querySelector('#fixtures button[data-v="off"][aria-pressed="true"]') ? '・機材なし' : ''}${document.querySelector('#scenery button[data-v="off"][aria-pressed="true"]') ? '・景色なし' : ''}`;
   }
 }
 
@@ -520,6 +527,12 @@ function setFixtures(on: boolean) {
 }
 for (const b of document.querySelectorAll<HTMLButtonElement>('#fixtures button')) b.onclick = () => setFixtures(b.dataset.v === 'on');
 pressed('fixtures', rt.fixturesShown ? 'on' : 'off');
+function setScenery(on: boolean) {
+  rt.setScenery(on);
+  pressed('scenery', on ? 'on' : 'off');
+}
+for (const b of document.querySelectorAll<HTMLButtonElement>('#scenery button')) b.onclick = () => setScenery(b.dataset.v === 'on');
+pressed('scenery', rt.sceneryShown ? 'on' : 'off');
 const camGroup = $<HTMLSpanElement>('cam');
 CAM_MODES.forEach((m, i) => {
   const b = document.createElement('button');
@@ -573,6 +586,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.code === 'KeyW') showScope(scopeEl.hidden);
   else if (e.code === 'KeyS') setSplash(!splashOn);
   else if (e.code === 'KeyF') setFixtures(!rt.fixturesShown);
+  else if (e.code === 'KeyK') setScenery(!rt.sceneryShown);
   else if (e.code === 'Escape') openMenu(null);
   else if (e.code === 'KeyL') {
     const next: LightingMode = rt.lightingMode === 'real' ? 'ideal' : 'real';
@@ -675,6 +689,15 @@ const exportError = $<HTMLParagraphElement>('export-error');
 for (const n of ANGLE_NAMES) angleSel.add(new Option(ANGLES[n].label, n));
 syncLength();
 angleSel.add(new Option('今の視点（自由カメラ）', 'current'));
+// 近い席 (near-seat.ts): 180° only, first in its list; the angles and keys 1-0 stay as they are
+const nearOpt = new Option('近い席（会場の形から自動）', 'near');
+angleSel.add(nearOpt, 0);
+/** The view an export angle stands for. */
+function exportView(angle: string) {
+  if (angle === 'near') return nearSeat(rt.venue);
+  if (angle === 'current') return { pos: cam.position.toArray(), target: controls.target.toArray(), fov: cam.fov };
+  return ANGLES[angle as AngleName];
+}
 const field = (name: string) => exportForm.elements.namedItem(name) as RadioNodeList;
 let exporting: AbortController | null = null;
 
@@ -701,31 +724,60 @@ function exportSettings() {
   // reflection and motion blur (no switch: improvements that change no show
   // content go into every version and every export)
   const hq = true;
-  return { width, height, fps, from, to, auto: !vr && field('camera').value === 'auto', angle: angleSel.value, vr, eye, hq };
+  // 180° only: the sound placed in the venue (spatial.ts, 追記46b), or the stereo mix as before
+  const spatial = vr && field('sound').value !== 'stereo';
+  return { width, height, fps, from, to, auto: !vr && field('camera').value === 'auto', angle: angleSel.value, vr, eye, hq, spatial };
 }
 
 function updateExportNote() {
   const o = exportSettings();
   const frames = Math.round((o.to - o.from) * o.fps);
   const sound = clock.music
-    ? `音楽${splashOn && clock.layerBuffer ? '＋水音' : ''}${clock.pyroBuffer ? '＋花火の音' : ''}つき`
+    ? `音楽${splashOn && clock.layerBuffer ? '＋水音' : ''}${clock.pyroBuffer ? '＋花火の音' : ''}つき${o.spatial ? '（空間の音）' : ''}`
     : '音楽なし（無音）';
   const light = rt.lightingMode === 'real' ? 'リアル' : '理想';
   exportError.hidden = true;
   exportForm.classList.toggle('vr', o.vr);
   if (o.vr && field('camera').value === 'auto') field('camera').value = 'fixed';
+  // the near seat is the 180° movie's; a flat export takes the 客席 instead
+  nearOpt.hidden = !o.vr;
+  if (!o.vr && angleSel.value === 'near') angleSel.value = 'audience';
+  // 60 fps at 7680 per eye is past what the headset is known to play (VR180_MAX_FPS)
+  const fpsSel = $<HTMLSelectElement>('export-fps');
+  const maxFps = o.vr ? VR180_MAX_FPS(o.eye) : Infinity;
+  for (const opt of fpsSel.options) opt.disabled = Number(opt.value) > maxFps;
+  if (o.fps > maxFps) {
+    fpsSel.value = String(maxFps);
+    return updateExportNote();
+  }
   if (o.vr) {
-    // measured on this Mac (docs/vr180-analysis.md): seconds per frame, both eyes, plus the converter
-    // measured without stage 7's export look; with it (×3 drops, 4 renders a
-    // frame) a video took about 5 times as long, so the same is assumed here
-    const perFrame = (o.eye > 4096 ? 1.0 : 0.24) * (o.hq ? 5 : 1);
-    const gb = (vr180BytesPerSecond(o.eye) * (o.to - o.from)) / 1e9;
-    $('export-note').textContent = `${fmt(o.from)}〜${fmt(o.to)}・${frames.toLocaleString()}コマ・${sound}・照明「${light}」。所要 約 ${fmt(frames * perFrame)}、ファイル 約 ${gb.toFixed(1)} GB（exports/visionpro/ に保存）。書き出し中はこのタブを開いたままにしてください`;
+    // seconds per frame on this Mac, export look (×3 drops, motion blur), both
+    // eyes and the converter, the Mac otherwise idle (追記46a): 4096 averaged
+    // 2.5 over the whole show at 60 fps (13,020 frames, 2026-11-13; 2.9 on the
+    // climax). The frame rate does not change the time a frame takes.
+    // 7680: 8.3 s on the climax, 2.9 times 4096's 2.9 s there (Mac idle,
+    // 2026-11-13), so about 7.1 over the whole show
+    const perFrame = o.eye > 4096 ? 7.1 : 2.5;
+    const gb = (vr180BytesPerSecond(o.eye, o.fps) * (o.to - o.from)) / 1e9;
+    $('export-note').textContent = `${fmt(o.from)}〜${fmt(o.to)}・${frames.toLocaleString()}コマ・${sound}・照明「${light}」。所要 約 ${fmt(frames * perFrame)}、ファイル 約 ${gb.toFixed(1)} GB（exports/visionpro/ に保存）。書き出し中はこのタブを開いたままにしてください。${seatNote(o.angle, o.eye)}${o.eye > 4096 ? '片目 7680 は 30 fps まで。' : ''}`;
   } else {
     $('export-note').textContent = `${fmt(o.from)}〜${fmt(o.to)}・${frames.toLocaleString()}コマ・${sound}・照明「${light}」。1コマずつ描くので、ショーの長さより時間がかかります`;
   }
 }
 exportForm.addEventListener('input', updateExportNote);
+
+/** For the 180° note: how far the seat is, how much the two eyes differ there, and whether a person could sit there. */
+function seatNote(angle: string, eye: number): string {
+  const view = exportView(angle);
+  const f = seatFacts(rt.venue, view.pos as [number, number, number]);
+  const m = (d: number) => (d >= 10 ? `${Math.round(d)} m` : d >= 1 ? `${d.toFixed(1)} m` : `${Math.round(d * 100)} cm`);
+  const px = (d: number) => Math.round(disparityPx(d, eye) * 10) / 10;
+  let s = `席：機材の真ん中まで ${m(f.centre)}・いちばん近い${f.nearestName}まで ${m(f.nearest)}（左右の目の差 ${px(f.centre)}〜${px(f.nearest)} px。大きいほど立体に見える）。`;
+  if (rt.show.bursts.length && f.insidePyroSafety) s += '⚠ この席は客席の縁より前で、花火の保安距離の内側です（現実には人がいられない場所）。';
+  // nearer than about 1 m, a headset's eyes work hard (spatial video guides keep subjects about 1-2.5 m away)
+  if (f.nearest < 1) s += '目の前 1 m より近い水は、ヘッドセットでは目が疲れることがあります。';
+  return s;
+}
 
 function openExport() {
   clock.pause();
@@ -757,12 +809,34 @@ function download(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
 }
 
+/**
+ * The sound of the range placed around a 180° seat (src/audio/spatial.ts):
+ * the same sounds at the same levels as the stereo mix (音量 menu, 水音
+ * button), each from where it is in the venue. Null without music. 'over'
+ * replaces parts of it, for the checks (a head turned, one sound alone).
+ */
+function spatialSound(from: number, to: number, seat: THREE.Vector3, yaw: number, over: Partial<SpatialInput> = {}) {
+  const m = clock.music;
+  if (!m) return Promise.resolve(null);
+  return spatialMix({
+    music: m,
+    musicGain: clock.gainOf('music'),
+    layout: rt.layout,
+    water: splashOn && clock.layerBuffer ? { show: rt.show, level: music?.curves.level, duration: showLength(), gain: clock.gainOf('water') } : null,
+    pyro: clock.pyroBuffer ? { bursts: rt.show.bursts, gain: clock.gainOf('pyro') } : null,
+    from,
+    to,
+    seat: seat.toArray(),
+    yaw,
+    ...over,
+  });
+}
+// for scripts/spatial-check.mjs
+(window as unknown as { __spatialSound?: typeof spatialSound }).__spatialSound = spatialSound;
+
 async function runExport() {
   const o = exportSettings();
-  const view =
-    o.angle === 'current'
-      ? { pos: cam.position.toArray(), target: controls.target.toArray(), fov: cam.fov }
-      : ANGLES[o.angle as AngleName];
+  const view = exportView(o.angle);
   const camera = o.auto ? (t: number) => applyView(cam, viewAt(shots, t)) : () => applyView(cam, view);
 
   // take the stage over: no live loop, full quality, the video's size
@@ -797,13 +871,16 @@ async function runExport() {
       const seat = new THREE.Vector3(...view.pos);
       // level, toward the angle's target: the horizon must stay level in a headset
       const yaw = Math.atan2(-(view.target[0] - seat.x), -(view.target[2] - seat.z));
+      if (o.spatial && clock.music) exportState.textContent = '空間の音を作っています…';
+      const spatial = o.spatial ? await spatialSound(o.from, o.to, seat, yaw) : null;
       const r = await exportVr180(rt, {
         ...o,
         blur: o.hq,
         seat,
         yaw,
         music,
-        name: `night-lagoon_vr180_${tag}_${rt.lightingMode}_${o.eye}_${o.fps}fps_${Math.round(o.from)}-${Math.round(o.to)}s.mov`,
+        spatial,
+        name: `night-lagoon_vr180_${tag}_${rt.lightingMode}_${o.eye}_${o.fps}fps_${Math.round(o.from)}-${Math.round(o.to)}s${spatial ? '_spatial' : ''}.mov`,
         signal: exporting.signal,
         onProgress({ rendered, converted, total }) {
           // drawing leads; the converter follows a little behind and finishes last

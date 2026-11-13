@@ -22,7 +22,11 @@
     { "kind": "projector", "name": "プロジェクター", "at": [0, -60], "height": 1.5, "aim": [0, -20], "note": "水幕の 40 m 後ろ、高さ 1.5 m から客席へ向けて映す（背面投影。World of Color は奥の水幕を12台の固定プロジェクターで映す、docs/show-knowledge/k4-light-screen.md S1・S8）。1台の絵として扱い、区画（左・中央・右）は山の列に合わせて自動で分かれる" },
     { "kind": "pyro", "site": "奥の台", "on": "barge", "tubes": 5, "from": [-40, -110], "to": [40, -110], "height": 1, "note": "花火は湖の奥。岸（z = 45）から src/pyro/shells.ts の保安距離をとる：水上の台は4号まで（155 m）、その奥の陸は10号まで（305 m）" },
     { "kind": "pyro", "site": "奥の陸", "on": "land", "tubes": 7, "from": [-120, -260], "to": [120, -260], "height": 2 },
-    { "kind": "seats", "name": "岸", "from": [-75, 45], "to": [75, 45], "note": "最前列の前の岸（「目線」のカメラはその縁にしゃがむ）" }
+    { "kind": "seats", "name": "岸", "from": [-75, 45], "to": [75, 45], "note": "最前列の前の岸（「目線」のカメラはその縁にしゃがむ）" },
+    { "kind": "shore", "name": "手前の岸", "from": [-600, 45], "to": [600, 45], "height": 0.8, "width": 6, "note": "客席の側の岸：水面から 0.8 m 上の遊歩道（舗装 6 m）、その後ろは地面。線の右（客席の側）が陸" },
+    { "kind": "rail", "name": "岸の手すり", "from": [-120, 45.3], "to": [120, 45.3], "height": 1.1, "spacing": 2, "note": "水際の手すり 1.1 m、柱は 2 m おき" },
+    { "kind": "crowd", "name": "前の座る客", "from": [-70, 46.5], "to": [70, 46.5], "depth": 4, "density": 1, "pose": "sit", "note": "手すりの後ろ、前の4 m は地面に座る（1人 1 m²）" },
+    { "kind": "crowd", "name": "後ろの立つ客", "from": [-70, 50.5], "to": [70, 50.5], "depth": 9, "density": 2, "pose": "stand", "note": "その後ろは立ち見（1 m² に2人）。「客席」のカメラ（z = 66、高さ 7 m）はその後ろの台の上" }
   ],
   "selections": [
     { "name": "グリッド全体", "target": "grid" },

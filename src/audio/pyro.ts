@@ -93,6 +93,21 @@ function panGains(pan: number): [number, number] {
 
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
+/**
+ * One sound of the fireworks track as the listener hears it: when it
+ * arrives (s, distance delay included), the sound (mono, or a left and a
+ * right channel), its level (distance included), its stereo pan, and where it
+ * comes from. renderPyro mixes these into stereo; the Vision Pro export
+ * places each at its point in space instead (spatial.ts).
+ */
+export interface PyroSound {
+  t: number;
+  snd: Float32Array | [Float32Array, Float32Array];
+  gain: number;
+  pan: number;
+  from: Vec3;
+}
+
 export function renderPyro(bursts: Burst[], listener: Vec3, duration: number, sampleRate: number, feel: PyroFeel = PYRO_FEEL): AudioBuffer {
   const len = Math.ceil(duration * sampleRate);
   const out = new AudioBuffer({ length: len, numberOfChannels: 2, sampleRate });
@@ -114,6 +129,43 @@ export function renderPyro(bursts: Burst[], listener: Vec3, duration: number, sa
       R[i0 + i] += v * b;
     }
   };
+
+  /** Mix a stereo sound in at time t, scaled and panned. */
+  const mix2 = (t: number, [sl, sr2]: [Float32Array, Float32Array], gain: number, pan: number) => {
+    const i0 = Math.round(t * sr);
+    const [gl, gr] = panGains(pan);
+    // pan by level, keeping each ear's own tail (a sqrt-2 law at the centre)
+    const a = gain * gl * Math.SQRT2;
+    const b = gain * gr * Math.SQRT2;
+    const from = Math.max(0, -i0);
+    const to = Math.min(sl.length, len - i0);
+    for (let i = from; i < to; i++) {
+      L[i0 + i] += sl[i] * a;
+      R[i0 + i] += sr2[i] * b;
+    }
+  };
+
+  for (const s of pyroSounds(bursts, listener, sampleRate, feel)) {
+    if (s.snd instanceof Float32Array) mix(s.t, s.snd, s.gain, s.pan);
+    else mix2(s.t, s.snd, s.gain, s.pan);
+  }
+
+  // loud, but never clipping: turned down, not bent (src/audio/limit.ts)
+  limit([L, R], sr, CEILING);
+  return out;
+}
+
+/** The loudest the fireworks track may reach (renderPyro's limit). */
+export const PYRO_CEILING = CEILING;
+
+/**
+ * Every sound of the fireworks, in the order renderPyro mixes them, heard
+ * from 'listener' (the launch and burst of each shell, a strobe's fizz).
+ */
+export function pyroSounds(bursts: Burst[], listener: Vec3, sampleRate: number, feel: PyroFeel = PYRO_FEEL): PyroSound[] {
+  const sr = sampleRate;
+  const sounds: PyroSound[] = [];
+  const mix = (t: number, snd: Float32Array, gain: number, pan: number, from: Vec3) => sounds.push({ t, snd, gain, pan, from });
 
   // each sound is made once per size (and kept): the shells of a run differ
   // only in level, place and time, as real shells of one size sound alike
@@ -271,20 +323,7 @@ export function renderPyro(bursts: Burst[], listener: Vec3, duration: number, sa
     return pair;
   };
 
-  /** Mix a stereo sound in at time t, scaled and panned. */
-  const mix2 = (t: number, [sl, sr2]: [Float32Array, Float32Array], gain: number, pan: number) => {
-    const i0 = Math.round(t * sr);
-    const [gl, gr] = panGains(pan);
-    // pan by level, keeping each ear's own tail (a sqrt-2 law at the centre)
-    const a = gain * gl * Math.SQRT2;
-    const b = gain * gr * Math.SQRT2;
-    const from = Math.max(0, -i0);
-    const to = Math.min(sl.length, len - i0);
-    for (let i = from; i < to; i++) {
-      L[i0 + i] += sl[i] * a;
-      R[i0 + i] += sr2[i] * b;
-    }
-  };
+  const mix2 = (t: number, snd: [Float32Array, Float32Array], gain: number, pan: number, from: Vec3) => sounds.push({ t, snd, gain, pan, from });
 
   const grain = sound('grain', 0.012, (() => {
     const g = rng(31);
@@ -302,7 +341,7 @@ export function renderPyro(bursts: Burst[], listener: Vec3, duration: number, sa
       // launch: a short, dull boom from the tube
       const d0 = dist(listener, b.origin);
       const lift = LEVEL * feel.launch * Math.pow(b.size / 5, 0.7) * (300 / Math.max(60, d0));
-      if (lift > 0) mix2(b.tLaunch + d0 / C, boom(size, 'launch'), lift, panOf(b.origin));
+      if (lift > 0) mix2(b.tLaunch + d0 / C, boom(size, 'launch'), lift, panOf(b.origin), b.origin);
       // the whistle of a climbing shell (comets and shells from 4号 up)
       if (feel.whistle && (b.shell === 'comet' || (b.size >= 4 && b.shell !== 'mine'))) {
         const rise = b.tBurst - b.tLaunch;
@@ -316,7 +355,7 @@ export function renderPyro(bursts: Burst[], listener: Vec3, duration: number, sa
           ph += (2 * Math.PI * (fA + 900 * u)) / sr;
           return Math.min(1, s / 0.15) * (1 - u) * (1 - u * 0.5) * Math.sin(ph + 0.4 * Math.sin(ph * 0.013));
         });
-        mix(b.tLaunch + 0.15 + dm / C, snd, LEVEL * 0.05 * (300 / Math.max(60, dm)), panOf(mid));
+        mix(b.tLaunch + 0.15 + dm / C, snd, LEVEL * 0.05 * (300 / Math.max(60, dm)), panOf(mid), mid);
       }
     }
     if (b.shell === 'comet') continue;
@@ -327,15 +366,13 @@ export function renderPyro(bursts: Burst[], listener: Vec3, duration: number, sa
     const pan = panOf(b.center);
     const amp = LEVEL * (child ? 0.12 : Math.pow(b.size / 5, 0.7)) * (300 / Math.max(80, d1));
     // the echoes are in the measured tail
-    mix2(tb, boom(size, child ? 'child' : 'burst'), amp, pan);
+    mix2(tb, boom(size, child ? 'child' : 'burst'), amp, pan, b.center);
     // strobe stars fizz as they blink: tiny noise grains through the burn
     if (b.shell === 'strobe') {
       const grains = Math.round(b.burn * 120);
-      for (let k = 0; k < grains; k++) mix(tb + 0.25 + r() * (b.burn - 0.25), grain, amp * 0.08 * (0.5 + r()), pan + (r() - 0.5) * 0.4);
+      for (let k = 0; k < grains; k++) mix(tb + 0.25 + r() * (b.burn - 0.25), grain, amp * 0.08 * (0.5 + r()), pan + (r() - 0.5) * 0.4, b.center);
     }
   }
 
-  // loud, but never clipping: turned down, not bent (src/audio/limit.ts)
-  limit([L, R], sr, CEILING);
-  return out;
+  return sounds;
 }

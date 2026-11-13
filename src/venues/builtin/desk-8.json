@@ -7,6 +7,7 @@
   "wind": [0, 0, 0],
   "parts": [
     { "kind": "line", "name": "噴水の列", "group": "grid", "fixture": "desk-jet", "count": 8, "from": [-0.21, 0], "to": [0.21, 0], "note": "左から 1〜8。ESP32 の PUMP_PINS と LED の並びも左から" },
-    { "kind": "seats", "name": "机の前", "from": [-0.4, 0.5], "to": [0.4, 0.5], "note": "机の前に座った人の目の位置" }
+    { "kind": "seats", "name": "机の前", "from": [-0.4, 0.5], "to": [0.4, 0.5], "note": "机の前に座った人の目の位置" },
+    { "kind": "shore", "height": 0.015, "width": 0.01, "note": "水槽の壁と机の天板（人は置かない。理由は「机の水槽」と同じ）" }
   ]
 }

@@ -46,7 +46,7 @@ npm run dev
 
 使い方の詳しい説明は `docs/manual/index.html`（マニュアル）。
 
-コードのコメントや文書に出てくる `docs/handoff.md`・`docs/video-review.md`・`docs/lab-analysis.md`・`docs/vr180-analysis.md`・`docs/test-scenarios.md`・`docs/reports/`・`docs/reviews/` と、`shots/`・`backups/` は作者の手元だけの作業メモ・記録で、このリポジトリには入っていない（経緯の出典として名前だけ残している）。
+コードのコメントや文書に出てくる `docs/handoff.md`・`docs/video-review.md`・`docs/lab-analysis.md`・`docs/vr180-analysis.md`・`docs/walkaround-plan.md`・`docs/test-scenarios.md`・`docs/reports/`・`docs/reviews/` と、`shots/`・`backups/` は作者の手元だけの作業メモ・記録で、このリポジトリには入っていない（経緯の出典として名前だけ残している）。
 
 プロジェクトは `projects/<id>/`（`project.json` と一覧の絵 `thumb.jpg`）に保存される。**GitHub には入れない**：`.gitignore` で `projects/*` を外し、見本の `projects/sample-*/` だけ残す。見本の絵とスタート画面の背景は `node scripts/home-assets.mjs` で撮り直す。
 
@@ -56,16 +56,19 @@ npm run dev
 | --- | --- |
 | 再生・一時停止 | Space、下部バーの ▶ |
 | 5秒送る・戻す | → / ← |
-| 照明の切替（リアル／理想） | L、下部バー |
+| 照明の切替（リアル／理想） | L、下部バーの「表示 ▾」 |
+| 機材の本体を出す／隠す | F、「表示 ▾」の「機材」 |
+| 景色（岸・手すり・客）を出す／隠す | K、「表示 ▾」の「景色」。隠すと景色を入れる前と同じ絵。表示の札に「・景色なし」 |
 | カメラ（客席／目線／スクリーン前／遠景／水面／左／右／空撮／花火と水／花火／おまかせ／自由） | 下部バーの「カメラ ▾」、数字キー 1〜0（1 客席 … 9 花火と水、0 花火）。おまかせは自動でカットとカメラワークが変わる。自由はドラッグで回転・ホイールで拡大 |
 | 動画の書き出し | 下部バーの「動画を書き出す」 |
-| 品質（自動・高・中・低） | 下部バー。自動は直近60フレームの平均が20msを超えると1段下げる |
+| 品質（自動・高・中・低） | 「表示 ▾」の「画質」。自動は直近60フレームの平均が20msを超えると1段下げる |
 
 本番画面（`play.html`）の URL の指定（2つ以上は `&` でつなぐ。例 `/play.html?show=hanabi&t=160&cam=sky`。前の形の `/?show=…` も `play.html` に回る）：
 
 - `?project=<id>`（プロジェクト。見本の `sample-hanabi` なども可）
 - `?show=fantasia|hanabi`（版。なしは Night Lagoon）、`?show=edited`（最後にエディタで開いたプロジェクト）
 - `?t=42`（開始位置）、`?light=ideal`、`?quality=high|medium|low`
+- `?fixtures=0`（機材の本体を隠す）、`?scenery=0`（景色を隠す）
 - `?cam=audience|eye|screen|wide|low|left|right|aerial|sky|pyro|auto|free`
 - `?venue=desk|garden|plaza|lagoon`（会場。自分で作った会場の id も可）
 - `?gfx=off`（確かめ用：水面の新しい見た目を切る。`impact,surface,mist` のうち書いたものだけ入れる、`all` で全部）
@@ -85,14 +88,36 @@ npm run dev
 
 ### Vision Pro 用の 180° 立体映像
 
-客席から見た 180° の立体映像（MV-HEVC、Apple Projected Media Profile）も、同じ「動画を書き出す」の画面から書き出す。
+客席から見た 180° の立体映像（MV-HEVC、Apple Projected Media Profile）も、同じ「動画を書き出す」の画面から書き出す。開発サーバー（`npm run dev`）で開いたときだけ使える。
 
 1. 「形式」で「Vision Pro（180° 立体）」を選ぶ
-2. 「1か所から撮る」の席を選ぶ（おまかせは使えない）
-3. 範囲と「片目 4096」（ふつう）か「片目 7680」を選び、下に出る所要時間とファイルの大きさを見てから書き出す
-4. 終わったら「Finder で表示」（`exports/visionpro/`）。AirDrop で Vision Pro に送り、写真アプリで見る
+2. 「1か所から撮る」の席を選ぶ（おまかせは使えない。カメラは動かない）。一覧の先頭の「**近い席（会場の形から自動）**」は、会場の形から決めた、人がいられるいちばん近い場所（客席の縁より前に出ない・機材から水の高さぶん離れて飛沫が掛からない・目は人の高さ。`src/show/near-seat.ts`）。近いほど両目の立体感が出る。180° のときだけ出る。湖では岸の座る客の中、機材の真ん中まで約 52 m（「客席」は 68 m）
+3. 範囲、「片目 4096」（ふつう）か「片目 7680」、30／60 fps を選ぶ。60 fps は片目 4096 だけ（Apple の上限 150 Mbps に収めるため品質 0.8 で書く。30 fps は 0.85）。片目 7680 は 30 fps まで
+4. 「音」で「空間（Vision Pro）」（初め）か「ステレオ」を選ぶ。空間は、音楽が舞台の左右、花火が破裂した所、水音が噴水から聞こえ、頭を回しても音が会場に残る（3次アンビソニックスを Apple の APAC にして入れる。`src/audio/spatial.ts`）。ファイル名の末尾が `_spatial`。ステレオは今までどおり
+5. 下の注（所要時間・ファイルの大きさ・席から機材の真ん中までと左右の目の差。花火のある版で客席の縁より前の席には ⚠ 花火の保安距離の内側）を見てから書き出す。書き出し中はタブを開いたままにする
+6. 終わったら「Finder で表示」（`exports/visionpro/`）。AirDrop で Vision Pro に送り、写真アプリで見る
 
-全編だと約 2.7 GB・約 130 分かかる。片目 7680 は実機での再生を確かめていない。
+所要時間と大きさの目安（このMac で測った値。全編 3分37秒）：
+
+| 片目 | fps | 1コマ | 全編の所要 | 全編の大きさ |
+| --- | --- | --- | --- | --- |
+| 4096 | 30 | 約 2.5 秒 | 約 4.5 時間 | 画面の見積もり 2.7 GB |
+| 4096 | 60 | 約 2.5 秒 | 約 9 時間 | 画面の見積もり 2.0 GB（実際に書き出した全編は 1.5 GB） |
+| 7680 | 30 | 約 7.1 秒 | 約 13 時間 | 画面の見積もり 3.7 GB |
+
+画面の大きさの見積もりは重い場面の値で出すので、静かな場面の多い範囲では実際はもっと小さい（`src/export/vr180-video.ts` の `vr180BytesPerSecond`）。
+
+**実機ではまだ確かめていない**：Vision Pro の実機で、60 fps・近い席の立体感・空間の音（頭の向きに合わせて鳴るか）・片目 7680 の再生は、どれもまだ見ていない（Mac の上で、書き出せること・音の向きを Apple の変換で2chにした数字までは確かめた。`node scripts/spatial-check.mjs`）。
+
+## 会場と景色
+
+会場エディタ（`venue.html`）で、噴水を置く場所を部品で作る。水の機材の部品（列・帯・弧・円・1台・水幕・プロジェクター・花火の台・客席）のほかに、「＋ 部品を足す ▾」の「景色」で、描くだけの部品を置ける（キューでは動かない）：
+
+- **岸**：護岸・歩道と、その後ろ地平線まで続く地面。「水面の縁ぜんぶ」か「線で引く」。高さ（水面から）と舗装の幅
+- **手すり**：線。高さと柱の間隔。足元の岸の上に立つ
+- **客**：線の後ろの帯に人の群れ。奥行き・密度（人/m²）・立つ／座る。人は機材の真ん中を向く。下の帯に「客 N人」
+
+組み込みの会場：湖は手前の岸・岸の手すり・座る客と立つ客で 3,082 人、広場は舗装と客 140 人、庭は芝と縁石と2人、机の2つは水槽の縁と天板だけ（机の席は机の前の1人なので人は置かない。人形の大きさの人を置くと水槽が模型に見える）。景色にも会場の決まり（止める・赤・黄、`src/venues/rules.ts` の `sceneryFindings`）がある。本番画面・エディタ・動画と 180° の書き出しに描き、カメラのすぐ前で舞台を塞ぐ人は描かない。描き方は `src/show/scenery.ts`、人の位置は `src/venues/landscape.ts`。
 
 ## 照明の2モード
 
@@ -176,6 +201,15 @@ npm run dev
 | `node scripts/venue-race-check.mjs` | 曲の解析前に会場を切り替えても戻らない |
 | `node scripts/tempo-check.mjs` | 拍の目安：120 BPM で作った曲で 120、テンポが揺れる録音では出さない |
 | `node scripts/draft-check.mjs` | 自分の曲から作る振付の下書き：構成・警告・机でも作れる・場面ごとの写真（`shots/draft/`） |
+| `node scripts/scenery-check.mjs` | 会場の景色：古い会場は景色なし・岸の高さに立つ・水の上の人を外す・決まり・組み込みの会場の警告 |
+| `node scripts/scenery-cost.mjs` | 景色を出す／隠すで1コマの時間を比べる |
+| `node scripts/spatial-check.mjs` | Vision Pro の空間の音：頭の向きごとに Apple の変換で2chにして、左右の耳を測る（Mac の macOS 26 以降） |
+
+開発サーバーで本番画面が開かず、コンソールに `504 (Outdated Optimize Dep)` が出るときは、開発サーバーを起動し直す（`vite.config.ts` の `optimizeDeps` で、three の `BufferGeometryUtils` を初めから束ねるようにして、起きにくくした）。
+
+## 歩き回る（試作・まだ実験）
+
+Vision Pro の中を歩いて見るための試作。計画は `docs/walkaround-plan.md`（Safari の WebXR で今のショーを描き、歩くのは客席のまわりだけ）。今あるのは、VR 用の軽い画質「VR」（本番画面の `?quality=vr`。メニューには出していない。高・中・低の絵は変えていない）と、両目を並べて描く試し台 `tools/vr-look.html`（`src/xr/`。`?perf=1` で重さを測る）、測る道具 `tools/walkaround/`。このMac で両目ぶん 3〜4.6 ms まで軽くした。WebXR にはまだつないでおらず、Vision Pro の実機では試していない。
 
 ## 机の噴水（実物）
 

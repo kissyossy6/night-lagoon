@@ -4,7 +4,8 @@ import type { ShowFile } from '../../show/types';
 import { isSampleId, lastProject, projectStore } from '../../projects/store';
 import { cueReach, type CueReach } from '../cues';
 import { VENUE_DOCS, buildVenue, deleteMyVenue, getVenue, loadMyVenues, newVenueId, saveMyVenue, PART_NAMES, type Part, type PartKind, type VenueDoc } from '../index';
-import { isWaterPart, placed } from '../parts';
+import { DENSITY, SCENE_SIZE, crowdPeople, focusOf, groundAt, lineFrame, onLand, venuePeople } from '../landscape';
+import { isSceneryPart, isWaterPart, placed } from '../parts';
 import { checkVenue, DISCLAIMER, LEVEL_NAMES, pyroLimits, RULE_NAMES, type Finding } from '../rules';
 import type { ScaleTier, Venue, WaterShape } from '../types';
 import { SNAP, TopView, type Selection, type Tool } from './view';
@@ -227,12 +228,19 @@ function targets(): { target: string; count: number }[] {
     }
     if (p.kind === 'pyro') return { target: `pyro:${p.site}`, count: p.tubes };
     if (p.kind === 'projector') return { target: 'projector', count: 1 };
+    if (p.kind === 'crowd') return { target: '', count: peopleOf(p, doc.parts.indexOf(p)).length };
     return { target: '', count: 0 };
   });
 }
 
 function partName(p: Part) {
+  if (p.kind === 'shore' && !p.name) return !p.from || !p.to ? '縁ぜんぶ' : '';
   return p.kind === 'pyro' ? p.site : (p.name ?? '');
+}
+
+/** Everyone of a crowd part (the 3D leaves out those over the water, and those in a camera's view of the show). */
+function peopleOf(p: Extract<Part, { kind: 'crowd' }>, n: number) {
+  return crowdPeople({ ...p, seed: n }, 0, [0, 0]);
 }
 
 function partColour(p: Part) {
@@ -244,6 +252,7 @@ function partColour(p: Part) {
 
 function groupOf(p: Part) {
   if (isWaterPart(p)) return p.group;
+  if (isSceneryPart(p)) return '景色';
   return p.kind === 'screen' || p.kind === 'projector' ? '水幕' : p.kind === 'pyro' ? '花火' : '客席';
 }
 
@@ -485,6 +494,93 @@ function renderPartFields() {
       fields.push(xz('始め', p.from, (v) => (P('seats').from = v)), xz('終わり', p.to, (v) => (P('seats').to = v)));
       fields.push(h('p', { class: 'vn-note' }, '客席の一番前の線。花火の保安距離と飛沫の判定に使います。'));
       break;
+    case 'shore': {
+      fields.push(row('名前', txt(p.name ?? '', (v) => (v ? (P('shore').name = v) : delete P('shore').name))));
+      const rim = !p.from || !p.to;
+      const shape = h('div', { class: 'seg' });
+      const toRim = () =>
+        commit(() => {
+          delete P('shore').from;
+          delete P('shore').to;
+        });
+      const toLine = () => commit(() => Object.assign(P('shore'), defaultShoreLine()));
+      shape.append(
+        h('button', { class: rim ? 'on' : '', disabled: doc.water.kind === 'infinite', title: doc.water.kind === 'infinite' ? '水面が「果てなし」なので縁がありません' : '', onclick: () => (rim ? undefined : toRim()) }, '水面の縁ぜんぶ'),
+        h('button', { class: rim ? '' : 'on', onclick: () => (rim ? toLine() : undefined) }, '線で引く'),
+      );
+      fields.push(row('形', shape));
+      if (!rim) {
+        fields.push(xz('始め', p.from!, (v) => (P('shore').from = v)), xz('終わり', p.to!, (v) => (P('shore').to = v)));
+        fields.push(
+          row(
+            '陸の側',
+            h('button', {
+              class: 'btn',
+              onclick: () =>
+                commit(() => {
+                  const q = P('shore');
+                  [q.from, q.to] = [q.to, q.from];
+                }),
+              title: '始めと終わりを入れ替える',
+            }, '反対にする'),
+          ),
+        );
+      }
+      fields.push(row('高さ', num(p.height, (v) => (P('shore').height = v), { min: 0.005, title: '水面から岸の上まで' }), unit('m（水面から）')));
+      fields.push(row('舗装の幅', num(p.width, (v) => (P('shore').width = v), { min: 0 }), unit('m')));
+      fields.push(
+        h(
+          'p',
+          { class: 'vn-note' },
+          rim
+            ? '水面の縁をぐるりと囲む岸。舗装（縁石・歩道）の向こうは、地平線まで地面が続きます。'
+            : '線の右側（図で左から右へ引くと下側＝客席の側）が陸です。図の細い目盛りが陸の側。舗装の向こうは、地平線まで地面が続きます。',
+        ),
+      );
+      break;
+    }
+    case 'rail': {
+      fields.push(row('名前', txt(p.name ?? '', (v) => (v ? (P('rail').name = v) : delete P('rail').name))));
+      fields.push(xz('始め', p.from, (v) => (P('rail').from = v)), xz('終わり', p.to, (v) => (P('rail').to = v)));
+      fields.push(row('高さ', num(p.height, (v) => (P('rail').height = v), { min: 0.01, title: '立っている地面から上の手すりまで' }), unit('m')));
+      fields.push(row('柱の間隔', num(p.spacing, (v) => (P('rail').spacing = v), { min: 0.01 }), unit('m')));
+      const g = groundAt(venue?.scenery, doc.water, (p.from[0] + p.to[0]) / 2, (p.from[1] + p.to[1]) / 2);
+      fields.push(h('p', { class: 'vn-note' }, g !== null ? `岸の上（水面から ${fmt(g)} m）に立ちます。` : '足元に岸がありません（水面の高さに立ちます）。'));
+      break;
+    }
+    case 'crowd': {
+      fields.push(row('名前', txt(p.name ?? '', (v) => (v ? (P('crowd').name = v) : delete P('crowd').name))));
+      const pose = h('div', { class: 'seg' });
+      for (const [v, label] of [['stand', '立つ'], ['sit', '座る']] as const) {
+        pose.append(
+          h('button', {
+            class: p.pose === v ? 'on' : '',
+            onclick: () =>
+              commit(() => {
+                const c = P('crowd');
+                // the usual density goes with the pose, unless it was set by hand
+                if (c.density === DENSITY[c.pose]) c.density = DENSITY[v];
+                c.pose = v;
+              }),
+          }, label),
+        );
+      }
+      fields.push(row('姿勢', pose));
+      fields.push(xz('始め', p.from, (v) => (P('crowd').from = v)), xz('終わり', p.to, (v) => (P('crowd').to = v)));
+      fields.push(row('奥行き', num(p.depth, (v) => (P('crowd').depth = v), { min: 0.01, title: '始めと終わりの線から後ろへ' }), unit('m')));
+      fields.push(row('密度', num(p.density, (v) => (P('crowd').density = v), { min: 0.01, title: `立つ ${DENSITY.stand}・座る ${DENSITY.sit} 人/m² がふつう` }), unit('人/m²')));
+      const all = peopleOf(p, n);
+      const dry = all.filter((q) => onLand(venue?.scenery, doc.water, q.x, q.z)).length;
+      fields.push(
+        h(
+          'p',
+          { class: 'vn-note' },
+          `${all.length.toLocaleString('ja-JP')} 人${dry < all.length ? `（水の上の ${all.length - dry} 人は描きません）` : ''}。線の右側（図で左から右へ引くと下側）に並び、機材の方を向きます。人は実物の大きさ（大人 1.5〜1.9 m、子ども 1〜1.35 m）。席（カメラ）からショーを塞ぐ人は、そのカメラでは描きません。`,
+        ),
+      );
+      if (doc.scale === 'desk') fields.push(h('p', { class: 'vn-note' }, '机の会場の人も実物の大きさです（人形ではありません）。机の見本の会場には、人を置いていません。'));
+      break;
+    }
   }
   if (p.note) fields.push(h('p', { class: 'vn-note' }, p.note));
   const move = (dir: -1 | 1) =>
@@ -620,6 +716,9 @@ function renderFooter() {
     h('span', {}, '花火の筒 ', h('b', {}, `${tubes}本`)),
     h('span', { title: '機材の種類の表（src/fixtures/）の仮の流量から' }, 'ポンプ ', h('b', {}, `${fmt(flow)} L/s`)),
     h('span', { title: '3D の飛沫の粒（画質「高」）' }, '飛沫の粒 ', h('b', {}, fmt(spray))),
+    v?.scenery?.crowds.length
+      ? h('span', { title: '景色の客（水の上の人は数えない）' }, '客 ', h('b', {}, `${venuePeople(v.scenery, doc.water, focusOf(v.groups.flatMap((g) => g.positions.map((q) => [q[0], q[2]] as Pt)))).length.toLocaleString('ja-JP')}人`))
+      : null,
     h('span', { class: 'spacer' }),
     cuesMenu,
   );
@@ -756,11 +855,51 @@ function addPart(k: PartKind) {
     case 'seats':
       p = { kind: 'seats', name: '客席', from: [r(cx - L / 2), r(cz + L / 2)], to: [r(cx + L / 2), r(cz + L / 2)] };
       break;
+    case 'shore': {
+      const z = SCENE_SIZE[doc.scale];
+      p = doc.water.kind === 'infinite' ? { kind: 'shore', ...defaultShoreLine(), height: z.shoreHeight, width: z.shoreWidth } : { kind: 'shore', height: z.shoreHeight, width: z.shoreWidth };
+      break;
+    }
+    case 'rail': {
+      // along the front of the seats (or the first bank), a little behind it
+      const [from, to] = frontLine();
+      const { n } = lineFrame(from, to);
+      const off = Math.max(s, SCENE_SIZE[doc.scale].shoreWidth * 0.05);
+      const push = (q: Pt): Pt => [r(q[0] + n[0] * off), r(q[1] + n[1] * off)];
+      p = { kind: 'rail', name, from: push(from), to: push(to), height: SCENE_SIZE[doc.scale].railHeight, spacing: SCENE_SIZE[doc.scale].railSpacing };
+      break;
+    }
+    case 'crowd': {
+      const [from, to] = frontLine();
+      const { n } = lineFrame(from, to);
+      const off = Math.max(s, SCENE_SIZE[doc.scale].shoreWidth * 0.15);
+      const push = (q: Pt): Pt => [r(q[0] + n[0] * off), r(q[1] + n[1] * off)];
+      p = { kind: 'crowd', name, from: push(from), to: push(to), depth: SCENE_SIZE[doc.scale].crowdDepth, density: DENSITY.stand, pose: 'stand' };
+      if (doc.scale === 'desk') toast('人は実物の大きさです（机の会場でも人形ではありません）');
+      break;
+    }
   }
   commit((d) => {
     d.parts.push(p);
     sel = { part: d.parts.length - 1, fixture: null };
   });
+}
+
+/** Where new rails and crowds line up: the seats' front line, else a line across the view. */
+function frontLine(): [Pt, Pt] {
+  const seats = doc.parts.find((q) => q.kind === 'seats') as Extract<Part, { kind: 'seats' }> | undefined;
+  if (seats) return [seats.from, seats.to];
+  const d = defaultShoreLine();
+  return [d.from, d.to];
+}
+
+/** A straight bank for this venue: along the seats' front line, else across the view below its middle. */
+function defaultShoreLine(): { from: Pt; to: Pt } {
+  const seats = doc.parts.find((q) => q.kind === 'seats') as Extract<Part, { kind: 'seats' }> | undefined;
+  if (seats) return { from: [...seats.from], to: [...seats.to] };
+  const [cx, cz] = view.centre();
+  const L = { desk: 0.4, garden: 2, plaza: 16, lagoon: 60 }[doc.scale];
+  return { from: [cx - L, cz + L / 2], to: [cx + L, cz + L / 2] };
 }
 
 function place(at: Pt) {
@@ -795,6 +934,7 @@ const view = new TopView($<HTMLCanvasElement>('vn-canvas'), {
   place,
   tool: () => tool,
   pyroLimit: (n) => (venue ? (pyroLimits(doc, venue).get(n)?.size ?? null) : null),
+  venue: () => venue,
 });
 
 // ---------------------------------------------------------------- menus
@@ -844,9 +984,16 @@ menu('add-btn', 'add-pop', (pop) => {
     ['pyro', '花火の台'],
     ['seats', '客席'],
   ];
+  const scenery: [PartKind, string][] = [
+    ['shore', '岸（護岸・歩道・地面）'],
+    ['rail', '手すり・柵'],
+    ['crowd', '客（人の群れ）'],
+  ];
   fill(pop, 
     h('div', { class: 'sub' }, `水の部品の機材：${kind(placeKind).label}（図の左上で選ぶ）`),
     ...kinds.map(([k, label]) => h('button', { onclick: () => addPart(k) }, label)),
+    h('div', { class: 'sub' }, '景色（描くだけ。キューでは動かない）'),
+    ...scenery.map(([k, label]) => h('button', { onclick: () => addPart(k) }, label)),
   );
 });
 

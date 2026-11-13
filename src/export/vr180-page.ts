@@ -4,8 +4,9 @@ import { analyseMusic } from '../audio/analysis';
 import { loadBackground } from '../audio/background';
 import type { LightingMode } from '../core/nozzles';
 import { projectionScreen } from '../screen/screen';
-import { ANGLES } from '../show/cameras';
-import { buildShow } from '../show/choreography';
+import { ANGLES, useVenueAngles, type AngleName } from '../show/cameras';
+import { buildShow, variantOf } from '../show/choreography';
+import { nearSeat } from '../show/near-seat';
 import { setCurves } from '../show/cues';
 import { ShowRuntime } from '../show/runtime';
 import { SHOW_DURATION } from '../show/song';
@@ -22,6 +23,7 @@ import { Vr180 } from './vr180';
  *                                          half), joined by tools/apmp
  *
  * URL: ?light=real|ideal&pw=1536&ph=288 (projector picture size; scale it with the eye size)
+ *      &venue=<id> (the show placed there)&seat=near|<angle> (default audience)&show=fantasia|hanabi
  */
 
 const q = new URLSearchParams(location.search);
@@ -34,17 +36,26 @@ rt.setLighting((q.get('light') as LightingMode) ?? 'real');
 const renderer = rt.stage.renderer;
 renderer.setPixelRatio(1);
 
-const seatView = ANGLES.audience;
-const seat = new THREE.Vector3(...seatView.pos);
-// the view centre: level, toward the stage centre
-const yaw = Math.atan2(-(seatView.target[0] - seat.x), -(seatView.target[2] - seat.z));
+const seat = new THREE.Vector3();
+let yaw = 0;
+/** The seat once the show (and so its venue) is set: an angle, or 近い席 (near-seat.ts). */
+function placeSeat() {
+  useVenueAngles(rt.venue);
+  const id = q.get('seat') ?? 'audience';
+  const v = id === 'near' ? nearSeat(rt.venue) : ANGLES[id as AngleName];
+  seat.set(...v.pos);
+  // the view centre: level, toward the stage centre
+  yaw = Math.atan2(-(v.target[0] - seat.x), -(v.target[2] - seat.z));
+}
 
 let music: AudioBuffer | null = null;
 const ready = loadBackground(new OfflineAudioContext({ numberOfChannels: 2, length: 1, sampleRate: 44100 }), SHOW_DURATION).then((m) => {
   music = m?.buffer ?? null;
   const features = music ? analyseMusic(music) : undefined;
   if (features) setCurves(features.curves);
-  rt.setShow(buildShow(features));
+  const show = buildShow(features, variantOf(q.get('show')));
+  rt.setShow(q.get('venue') ? { ...show, venue: q.get('venue')! } : show);
+  placeSeat();
 });
 
 let vr: Vr180 | null = null;

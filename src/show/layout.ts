@@ -152,9 +152,13 @@ export function drawScale(height: number): { size: number; drop: number } {
 }
 
 /** Particle budget multiplier per quality tier. */
-export type Quality = 'high' | 'medium' | 'low' | 'export';
-/** 'export' (stage 7 H1): only for video and Vision Pro exports, three times the drops. */
-export const QUALITY_SCALE: Record<Quality, number> = { high: 1, medium: 0.55, low: 0.25, export: 3 };
+export type Quality = 'high' | 'medium' | 'low' | 'export' | 'vr';
+/**
+ * 'export' (stage 7 H1): only for video and Vision Pro exports, three times the drops.
+ * 'vr' (46d, docs/walkaround-plan.md): only for walking round in Vision Pro (src/xr/),
+ * drawn live for both eyes at 90 frames a second, so far fewer drops than 'low'.
+ */
+export const QUALITY_SCALE: Record<Quality, number> = { high: 1, medium: 0.55, low: 0.25, export: 3, vr: 0.1 };
 
 export function buildLayout(venue: Venue = LAGOON, quality: Quality = 'high'): Layout {
   const scale = QUALITY_SCALE[quality];

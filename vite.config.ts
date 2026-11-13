@@ -27,6 +27,9 @@ function preloadFonts(): Plugin {
 export default defineConfig({
   plugins: [preloadFonts(), videoStore(__dirname), vr180Store(__dirname), controlStore(__dirname), artnetBridge(), projectStore(__dirname)],
   server: { port: 5199, strictPort: true },
+  // bundled from the start: found only when a page first imports it, Vite
+  // re-bundles and open pages get "504 Outdated Optimize Dep" until reloaded
+  optimizeDeps: { include: ['three/examples/jsm/utils/BufferGeometryUtils.js'] },
   build: {
     // the player and the editor read the project before they start (top-level await)
     target: 'es2022',

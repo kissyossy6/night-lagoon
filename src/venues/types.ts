@@ -101,6 +101,58 @@ export type WaterShape =
 
 export type ScaleTier = 'desk' | 'garden' | 'plaza' | 'lagoon';
 
+/** A point on the ground, [x, z] (m). */
+export type Pt2 = [number, number];
+
+/**
+ * 岸: the bank and the land behind it (2026-11-12, scenery). Either the
+ * whole rim of the water (rim: the water's shape, which must not be
+ * 果てなし), or a straight bank from → to with the land on its right as seen
+ * from above (x right, z toward the audience: a bank drawn left to right has
+ * the land on the audience's side). The land runs on to the horizon.
+ */
+export interface ShoreDef {
+  rim: boolean;
+  from: Pt2;
+  to: Pt2;
+  /** Top of the bank above the water (m). */
+  height: number;
+  /** The paved edge (coping, promenade) along the water (m); the ground behind it is darker. */
+  width: number;
+}
+
+/** 手すり・柵 along a line, standing on the bank under it. */
+export interface RailDef {
+  from: Pt2;
+  to: Pt2;
+  /** Top rail above the ground it stands on (m). */
+  height: number;
+  /** Posts at most this far apart (m). */
+  spacing: number;
+  /** Ground under it (the bank's height, 0 off the land). */
+  base: number;
+}
+
+/** 客: people in a band behind the line from → to (on its right, as a bank's land), facing the stage. */
+export interface CrowdDef {
+  from: Pt2;
+  to: Pt2;
+  /** How far back the band runs (m). */
+  depth: number;
+  /** People per m². */
+  density: number;
+  pose: 'stand' | 'sit';
+  /** Seeds where each one stands (the part's place in the file). */
+  seed: number;
+}
+
+/** What surrounds the show: banks, rails, people. Drawn by src/show/scenery.ts. */
+export interface Scenery {
+  shores: ShoreDef[];
+  rails: RailDef[];
+  crowds: CrowdDef[];
+}
+
 export interface Venue {
   id: string;
   name: string;
@@ -116,6 +168,8 @@ export interface Venue {
   audience?: AudienceEdge;
   /** Wind over the venue (m/s), which carries the smoke; default a light breeze. */
   wind?: Vec3;
+  /** Banks, rails and people (岸・手すり・客); missing: none (the water to the horizon, as before). */
+  scenery?: Scenery;
   seats: SeatDef[];
   /**
    * DMX addresses chosen by hand, per group ('grid', 'screen'…): the group's

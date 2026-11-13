@@ -9,6 +9,8 @@
     { "kind": "single", "name": "真ん中", "group": "geyser", "fixture": "garden-jet", "at": [0, 0], "note": "ガイザーの役：真ん中の1本" },
     { "kind": "ring", "name": "まわりの円", "group": "grid", "fixture": "garden-jet", "count": 8, "center": [0, 0], "radius": 0.5, "a0": 22.5, "note": "縁まで 1 m なので、高さ 1 m まで" },
     { "kind": "ring", "name": "扇", "group": "fan", "fixture": "garden-fan", "count": 4, "center": [0, 0], "radius": 0.4, "a0": 0, "note": "扇は水が ±45° に開くので、着水は 1 m 先まで" },
-    { "kind": "seats", "name": "池の前", "from": [-2, 2.5], "to": [2, 2.5], "note": "池の縁から 1 m 離れて立つ" }
+    { "kind": "seats", "name": "池の前", "from": [-2, 2.5], "to": [2, 2.5], "note": "池の縁から 1 m 離れて立つ" },
+    { "kind": "shore", "height": 0.03, "width": 0.25, "note": "池の縁石 25 cm と芝。水面から 3 cm（「目線」のカメラは 5 cm）" },
+    { "kind": "crowd", "name": "向こう岸の人", "from": [-1.5, -2.1], "to": [-2.5, -1.1], "depth": 0.6, "density": 2, "pose": "stand", "note": "池の左奥に2人。真後ろに立つと噴水（1 m）の上に人がそびえるので脇へ。手前の席は低いカメラなので、手前には置かない" }
   ]
 }

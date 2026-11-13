@@ -146,7 +146,7 @@
 <main>
 
 <header class="top">
-  <div class="eyebrow">2026-11-06 の画面で書いたマニュアル</div>
+  <div class="eyebrow">2026-11-06 の画面で書き、2026-11-13 の画面に合わせて直したマニュアル</div>
   <h1>使い方マニュアル</h1>
   <p class="lede">噴水ショーのシミュレーター（water-show v2）の、全部の機能の使い方を1か所にまとめました。ボタンや画面の名前は、実際の画面とソースで確かめた名前をそのまま使っています。写真は、開発サーバーで実際に撮った画面です（音は出していません）。</p>
   <div class="facts">
@@ -300,11 +300,12 @@ npm run dev</pre>
   </article>
 
   <article class="cmp" id="player-view">
-    <h3>画質の段階・照明モード・機材（表示 ▾）</h3>
+    <h3>画質の段階・照明モード・機材・景色（表示 ▾）</h3>
     <ol class="steps">
       <li>下のバーの「表示」を押す。</li>
       <li>「照明」で「リアル」か「理想」を押す（<kbd>L</kbd> でも切り替わる）。</li>
       <li>「機材」で「出す」か「隠す」を押す（<kbd>F</kbd> でも切り替わる）。</li>
+      <li>「景色」で「出す」か「隠す」を押す（<kbd>K</kbd> でも切り替わる）。</li>
       <li>「画質」で「自動・高・中・低」のどれかを押す。</li>
     </ol>
     <ul class="plain">
@@ -313,9 +314,10 @@ npm run dev</pre>
       <li><b>自動</b>：初めはこれ。描くのが重い（直近の平均が 20 ms を超える）と、1段ずつ下げて「描画が重いため品質を「中」に下げました」と出す。</li>
       <li><b>高・中・低</b>：決めた画質のまま。<b>低</b> にすると、水面の新しい見た目（5章）も切れて軽くなる。</li>
       <li><b>機材</b>：噴水のノズル・首振りの頭・ポンプ・水幕の管・プロジェクター・花火の筒（湖だけ）の本体。初めは「出す」。夜なので暗い金属・樹脂の色で、月明かりと、その機材の LED の光で照らされた所だけがぼんやり見える。LED の輪はキューの色で光り、明るさ 0 で消える。ウィップと湖のファンの頭は、キューのパン・チルトどおりに水と同じ向きへ回る。湖では水面から頭だけが出る。水面には映らない（重さのため）。「隠す」にすると前の絵とまったく同じ。動画・Vision Pro の書き出しも、このときの出す／隠すで撮る。</li>
+      <li><b>景色</b>：会場の岸（護岸・歩道と、その後ろ地平線まで続く地面）・手すり・客（人の群れ）。会場エディタで置いたもの（4章「部品の置き方」）。初めは「出す」。夜なので暗く、月明かり・夜空・ショーの光・水幕の映像・花火で照らされた所だけが見える。客は舞台を向くので、席からは黒い背中と頭に少し色が乗る。カメラのすぐ前で舞台を塞ぐ人と、カメラから 0.6 m 以内の人は描かない。水面には映らない（重さのため）。「隠す」にすると景色を入れる前の絵とまったく同じで、バーの「表示」の札に「・景色なし」と出る。エディタの 3D と、動画・Vision Pro の書き出しにも入る（書き出しは、このときの出す／隠すで撮る）。景色の部品が無い会場（古い自分の会場など）は今までどおり。</li>
     </ul>
     <div class="figs">
-      <figure><img loading="lazy" src="img/04-view.jpg" alt="表示メニュー"><figcaption>「表示」の中：照明（Lキー）リアル／理想、画質 自動／高／中／低</figcaption></figure>
+      <figure><img loading="lazy" src="img/04-view.jpg" alt="表示メニュー"><figcaption>「表示」の中：照明（Lキー）リアル／理想、機材（Fキー）・景色（Kキー）出す／隠す、画質 自動／高／中／低</figcaption></figure>
       <figure><img loading="lazy" src="img/07-ideal.jpg" alt="理想の照明"><figcaption>上の「再生・シーク」の写真と同じ時刻を「理想」で。柱の上まで色が付く</figcaption></figure>
     </div>
   </article>
@@ -385,19 +387,39 @@ npm run dev</pre>
 
   <article class="cmp" id="player-vr">
     <h3>Vision Pro 180° の書き出し</h3>
+    <p>開発サーバー（<code>npm run dev</code>）で開いたときだけ使えます。</p>
     <ol class="steps">
       <li>「動画を書き出す」を押す。</li>
       <li>「形式」で「Vision Pro（180° 立体）」を選ぶ。</li>
-      <li>「1か所から撮る」の席を選ぶ（おまかせは使えない。カメラは動かない）。</li>
-      <li>「範囲」と「片目 4096」（ふつうはこれ）か「片目 7680」を選ぶ。</li>
-      <li>下に出る「所要」と「ファイル」の大きさを見てから、「書き出す」を押す。</li>
+      <li>「1か所から撮る」の席を選ぶ（おまかせは使えない。カメラは動かない）。立体感を出したいときは、一覧の先頭の「<b>近い席（会場の形から自動）</b>」。</li>
+      <li>「範囲」と「片目 4096」（ふつうはこれ）か「片目 7680」、「30 fps」か「60 fps」を選ぶ（60 fps は片目 4096 のときだけ）。</li>
+      <li>「音」で「空間（Vision Pro）」（初めはこれ）か「ステレオ」を選ぶ。</li>
+      <li>下の注（所要・ファイルの大きさ・席のこと）を見てから、「書き出す」を押す。</li>
       <li>書き出し中は、このタブを開いたままにする。</li>
       <li>終わったら「Finder で表示」を押す（<code>exports/visionpro/</code> に入っている）。</li>
       <li>AirDrop で Vision Pro に送り、写真アプリで見る。</li>
     </ol>
-    <div class="note warn">全編だと 2.7 GB・約 130 分かかる表示が出ます。ディスクの空きを先に見てください。片目 7680 は実機での再生を確かめていません。</div>
+    <table class="t">
+      <tr><th>選ぶ所</th><th>中身</th></tr>
+      <tr><td>近い席（会場の形から自動）</td><td>会場の形から決めた、人がいられるいちばん近い場所。客席の縁（部品「客席」）より前に出ない（花火の保安距離はここから測る）・機材から水の高さぶん離れて飛沫が掛からない・水から一歩外・目は人の高さ（湖と広場は立って 1.6 m、庭は椅子で 1.2 m、机は座って机の上 0.3 m。足元は岸の上）で、機材の真ん中を水平に向く。どの会場（自分で作った会場も）でも出る。180° のときだけ一覧に出る（ふつうの動画では、高い水の上が画面から切れるため）。湖では岸の座る客の中で、機材の真ん中まで約 52 m（「客席」は 68 m）。カメラの一覧と数字キーは変わらない。</td></tr>
+      <tr><td>席の注</td><td>どの席でも「機材の真ん中まで ○ m・いちばん近い○○まで ○ m（左右の目の差 ○〜○ px）」が出る。左右の目の差が大きいほど立体に見える（湖の近い席で 1.6〜2.4 px、客席で 1.2〜1.7 px。片目 4096 のとき）。花火のある版で客席の縁より前の席（湖の目線・水面・スクリーン前など）は「⚠ この席は客席の縁より前で、花火の保安距離の内側です」。いちばん近い水が 1 m より近い（机）と「目が疲れることがあります」。</td></tr>
+      <tr><td>片目 4096／7680</td><td>4096 が Apple の再生保証の範囲。7680 はいちばん細かいが、30 fps まで（60 fps は選べない）。</td></tr>
+      <tr><td>30／60 fps</td><td>60 fps は動きがなめらか。Apple の上限（ピーク 150 Mbps）に収めるため、60 fps は品質 0.8、30 fps は 0.85 で書く。</td></tr>
+      <tr><td>音：空間（Vision Pro）</td><td>音楽は舞台の左右、花火は空の破裂した所（打ち上げは筒から）、水音は噴水から聞こえる。頭を回しても音は会場に残る（3次アンビソニックスを Apple の APAC にして入れる）。席を変えると音の位置も変わる。ファイル名の末尾が <code>_spatial</code>。ステレオの音も予備として一緒に入る。</td></tr>
+      <tr><td>音：ステレオ</td><td>今までと同じ音（頭と一緒に回る）。</td></tr>
+    </table>
+    <h4>所要時間と大きさの目安</h4>
+    <p>このMac（ほかに重い仕事をしていないとき）で測った値です。書き出し画面の注にも、範囲に合わせた見積もりが出ます（所要は 分:秒）。</p>
+    <table class="t">
+      <tr><th>片目・fps</th><th>1コマ</th><th>全編（3:37）の所要</th><th>全編の大きさ</th></tr>
+      <tr><td>4096・30 fps</td><td>約 2.5 秒</td><td>約 4.5 時間（注に「約 271:15」）</td><td>見積もり 約 2.7 GB</td></tr>
+      <tr><td>4096・60 fps</td><td>約 2.5 秒</td><td>約 9 時間（注に「約 542:30」）</td><td>見積もり 約 2.0 GB（実際に書き出した全編は 1.5 GB）</td></tr>
+      <tr><td>7680・30 fps</td><td>約 7.1 秒</td><td>約 13 時間（注に「約 770:21」）</td><td>見積もり 約 3.7 GB</td></tr>
+    </table>
+    <div class="note warn">大きさの見積もりは、重い場面の値で出すので多めです（静かな場面の多い範囲では、実際はもっと小さい）。ディスクの空きを先に見てください（8章「ディスクがいっぱいのとき」）。試すときは 10〜15 秒の「指定」で。</div>
+    <div class="note bad"><b>Vision Pro の実機では、まだ確かめていません</b>：60 fps の再生・近い席の立体感（机の近さで目が疲れないか）・空間の音（写真アプリで頭の向きに合わせて鳴るか）・片目 7680 の再生。Mac の上では、書き出せること、ファイルの中身（映像と APAC 16ch の音）、音の向き（Apple の変換でヘッドホン用の2chにして測った左右の差）までを確かめています。広がりや距離感は耳で決めていません。</div>
     <div class="figs small">
-      <figure><img loading="lazy" src="img/10-export-vr.jpg" alt="Vision Pro"><figcaption>Vision Pro（180° 立体）を選んだところ。下に所要時間と大きさ</figcaption></figure>
+      <figure><img loading="lazy" src="img/10-export-vr.jpg" alt="Vision Pro"><figcaption>Vision Pro（180° 立体）で「近い席」を選んだところ（湖）。「音」の行と、下の注に所要時間・大きさ・席から機材の真ん中までの距離と左右の目の差</figcaption></figure>
     </div>
   </article>
 
@@ -413,7 +435,8 @@ npm run dev</pre>
       <tr><td><code>?cam=</code></td><td>カメラ。<code>audience</code> 客席・<code>eye</code> 目線・<code>screen</code>・<code>wide</code> 遠景・<code>low</code> 水面・<code>left</code>・<code>right</code>・<code>aerial</code> 空撮・<code>sky</code> 花火と水・<code>pyro</code> 花火・<code>auto</code> おまかせ・<code>free</code> 自由。</td></tr>
       <tr><td><code>?light=</code></td><td>照明。<code>real</code>（リアル）か <code>ideal</code>（理想）。</td></tr>
       <tr><td><code>?fixtures=0</code></td><td>機材の本体を隠す（表示 ▾ の「機材」→「隠す」と同じ）。なしは出す。</td></tr>
-      <tr><td><code>?quality=</code></td><td>画質を決めたままにする。<code>high</code>・<code>medium</code>・<code>low</code>。</td></tr>
+      <tr><td><code>?scenery=0</code></td><td>会場の景色（岸・手すり・客）を隠す（表示 ▾ の「景色」→「隠す」と同じ）。なしは出す。</td></tr>
+      <tr><td><code>?quality=</code></td><td>画質を決めたままにする。<code>high</code>・<code>medium</code>・<code>low</code>。<code>vr</code> は、まだ実験中の「歩き回る」試作のための軽い画質（8章「まだ実験中のこと」）。ふだんは使わない。</td></tr>
       <tr><td><code>?gfx=</code></td><td>確かめ用。<code>off</code>＝水面の新しい見た目を全部切る（前の見た目）。<code>impact,surface,mist</code> のうち書いたものだけ入れる。<code>all</code>＝全部。</td></tr>
       <tr><td><code>?music=</code></td><td>自作の曲を作って流す。<code>score</code>（ラプソディー・イン・ブルーの編曲）か <code>original</code>（合成音の曲）。</td></tr>
       <tr><td><code>?view=x,y,z,tx,ty,tz,fov</code></td><td>確かめ用。カメラの位置・向き・画角を数字で決める（比べる写真を撮るとき）。</td></tr>
@@ -427,7 +450,7 @@ npm run dev</pre>
 <!-- ============================================================ 3 -->
 <section class="theme" id="editor" data-short="エディタ">
   <h2><span class="n">3</span>エディタ</h2>
-  <p class="intro">時間軸で演出を作る画面（<code>edit.html</code>）。上の帯：← 一覧・プロジェクト名・ファイル ▾・書き出し ▾・会場 ▾・↶ ↷・再生・照明・画質・視点リセット・ミュート・▶ 本番で再生。左上が 3D、左下が時間軸、右が「キュー｜警告」。3D には機材の本体（ノズル・首振りの頭・ポンプなど）がいつも出ている。首の動く機材の頭はキューどおりに回る。</p>
+  <p class="intro">時間軸で演出を作る画面（<code>edit.html</code>）。上の帯：← 一覧・プロジェクト名・ファイル ▾・書き出し ▾・会場 ▾・↶ ↷・再生・照明・画質・視点リセット・ミュート・▶ 本番で再生。左上が 3D、左下が時間軸、右が「キュー｜警告」。3D には機材の本体（ノズル・首振りの頭・ポンプなど）と会場の景色（岸・手すり・客）がいつも出ている。首の動く機材の頭はキューどおりに回る。</p>
 
   <article class="cmp" id="editor-tabs">
     <h3>タブ（全体・水・光・水幕・花火）</h3>
@@ -686,6 +709,7 @@ npm run dev</pre>
       <li>自分の会場は、この端末のブラウザに保存されます（「この端末に保存済み」）。</li>
       <li>「会場 ▾」：新しい会場・この会場を写す・JSON を書き出す・JSON を読み込む…・この会場を消す…。</li>
       <li>書き出した JSON を <code>src/venues/builtin/</code> に置くと、組み込みの会場になります。</li>
+      <li><b>組み込みの会場の景色</b>：ラグーン＝手前の岸（水面から 0.8 m・舗装 6 m）・岸の手すり・前の座る客 560 人と後ろの立つ客 2,522 人（合わせて 3,082 人）。広場＝床噴水のまわりの舗装と客 140 人。庭＝芝と縁石、池の左奥に2人。机の2つ＝水槽の縁と天板だけ。<b>机には人を置きません</b>：机の席は机の前に座る1人で、隣の人は画面の外か、ぼやけて画面を塞ぐだけ。人形の大きさの人を置くと、水槽が模型に見えます。</li>
     </ul>
     <div class="figs">
       <figure><img loading="lazy" src="img/46-desk.jpg" alt="机"><figcaption>机の水槽</figcaption></figure>
@@ -708,6 +732,22 @@ npm run dev</pre>
       <li>消すときは <kbd>Delete</kbd>、または右の「部品を消す」。</li>
       <li>できたら、右上の「3Dで見る」で本番画面を開く（エディタの演出があればそれ、無ければ Rhapsody in Blue）。</li>
     </ol>
+    <h4>景色（岸・手すり・客）を置く</h4>
+    <p>景色は描くだけの部品です（キューでは動かない）。本番画面・エディタの 3D・書き出しに出ます。</p>
+    <ol class="steps">
+      <li>左下の「＋ 部品を足す ▾」の下の段「景色」で、「岸（護岸・歩道・地面）」「手すり・柵」「客（人の群れ）」のどれかを押す。初めの値（高さ・幅など）は会場の規模に合わせて入る。</li>
+      <li>図で選んで、つかんで動かす（□：線の端、客の ○：奥行き）。</li>
+      <li>右の欄で数値を直す（下の表）。</li>
+      <li>消すときは <kbd>Delete</kbd>、または右の「部品を消す」。</li>
+      <li>左の一覧では「景色」の段にまとまる。客の人数は一覧の右と、画面の下の帯「客 N人」に出る（水の上の人は数えない）。</li>
+    </ol>
+    <table class="t">
+      <tr><th>景色の部品</th><th>右の欄で決めること</th><th>図の見え方</th></tr>
+      <tr><td>岸</td><td>「水面の縁ぜんぶ」か「線で引く」。高さ（水面から岸の上まで）・舗装の幅。線で引くときは、線の右側（図で左から右へ引くと下側＝客席の側）が陸。舗装の向こうは地平線まで地面が続く。</td><td>岸の帯と、陸の側の細い目盛り</td></tr>
+      <tr><td>手すり</td><td>始め・終わり（線）、高さ、柱の間隔。足元の岸の上に立つ。</td><td>手すりの線と柱</td></tr>
+      <tr><td>客</td><td>始め・終わり（客の前の線）、奥行き（線から後ろへ）、密度（人/m²。立つ 2・座る 1 がふつう）、姿勢（立つ／座る）。人は機材の真ん中を向く。大きさは実物（大人 1.5〜1.9 m、8人に1人は子ども 1〜1.35 m）。</td><td>客の帯と一人ずつの点（水の上の人は赤い ×）</td></tr>
+    </table>
+    <div class="note">規模ごとの初めの値（<code>src/venues/landscape.ts</code> の <code>SCENE_SIZE</code>）：湖＝岸 0.8 m・舗装 6 m・手すり 1.1 m・柱 2 m おき／広場＝舗装 0.02 m（水面と重ならない分だけ）／庭＝芝 0.03 m・縁石 25 cm／机＝水槽の壁。描くのは 1 会場 12,000 人まで。図の「全体」は、地平線まで続く岸の線を枠に入れません。</div>
     <table class="t">
       <tr><th>部品</th><th>どんな並び</th></tr>
       <tr><td>列</td><td>まっすぐ等間隔。</td></tr>
@@ -719,17 +759,21 @@ npm run dev</pre>
       <tr><td>プロジェクター</td><td>水幕の映像を出す機材（会場に1台）。位置・高さ・向ける点・当てる水幕。図では小さな四角と、当てる水幕の両端への線。□で本体、○で向ける点を動かす。区画（左・中央・右）は当てる山の列に合わせて自動で分かれる。置かなければ、横長の幕の 40 m 後ろから全部の水幕に当たるものが入る。</td></tr>
       <tr><td>花火の台</td><td>水上の台か陸。筒の数・高さ。客席までの距離から「ここから打てるのは〇号まで」が出る。</td></tr>
       <tr><td>客席</td><td>客席の一番前の線。花火の保安距離と飛沫の判定に使う。</td></tr>
+      <tr><td>景色（岸・手すり・客）</td><td>描くだけの部品。上の「景色を置く」。</td></tr>
     </table>
     <div class="note">部品の順番（「↑ 前へ」「↓ 後へ」）と、外した台は、同じグループの中の番号の振り方に効きます。番号で書いたキュー（<code>grid[10-20]</code> など）が指す台も変わります。図の操作：右ドラッグで見る位置、ホイールで拡大、右下の「全体」で会場全体。</div>
     <div class="figs small">
-      <figure><img loading="lazy" src="img/44-add-menu.jpg" alt="部品を足す"><figcaption>「＋ 部品を足す ▾」の中</figcaption></figure>
+      <figure><img loading="lazy" src="img/44-add-menu.jpg" alt="部品を足す"><figcaption>「＋ 部品を足す ▾」の中。下の段が「景色」（庭の池。下の帯に「客 2人」）</figcaption></figure>
       <figure><img loading="lazy" src="img/48-venue-projector.jpg" alt="プロジェクター"><figcaption>ラグーンのプロジェクターを選んだところ（右に 位置・高さ・向ける点・当てる水幕）</figcaption></figure>
+    </div>
+    <div class="figs one">
+      <figure><img loading="lazy" src="img/49-venue-scenery.jpg" alt="景色"><figcaption>ラグーンの景色：岸の手すり（客席の線のすぐ下）の後ろに、選んだ「前の座る客」560 人（橙）と「後ろの立つ客」2,522 人。右に 姿勢・始め・終わり・奥行き・密度、下の帯に「客 3,082人」</figcaption></figure>
     </div>
   </article>
 
   <article class="cmp" id="venue-rules">
     <h3>決まり（止める・赤・黄）の意味と直し方</h3>
-    <p>右の「警告」に、会場の無理が3段で出ます。数は見出しに「止める 0・赤 1・黄 2」のように出ます。警告は目安で、実際の許可の代わりにはなりません。</p>
+    <p>右の「警告」に、会場の無理が3段で出ます。数は見出しに「止める 0・赤 1・黄 2」のように出ます。警告は目安で、実際の許可の代わりにはなりません。「（景色）」の付いた行は、景色の部品（岸・手すり・客）を置いたときだけ出ます（<code>src/venues/rules.ts</code> の <code>sceneryFindings</code>）。</p>
     <table class="t">
       <tr><th>段</th><th>名前</th><th>何が起きている</th><th>直し方</th></tr>
       <tr><td><span class="dot stop"></span>止める</td><td>組み立てられない</td><td>1つのグループに違う種類がある、など。</td><td>グループの名前を分ける。</td></tr>
@@ -737,14 +781,24 @@ npm run dev</pre>
       <tr><td><span class="dot stop"></span>止める</td><td>置き場の違い</td><td>陸の花火の台が水の上、水上の台が水の外。</td><td>「置き場」を変えるか、台を動かす。</td></tr>
       <tr><td><span class="dot stop"></span>止める</td><td>重なり</td><td>同じ種類どうしが、決まった間隔より近い。</td><td>台数を減らすか、間を広げる。</td></tr>
       <tr><td><span class="dot stop"></span>止める</td><td>同じ場所</td><td>違う種類が、ほぼ同じ場所にある。</td><td>どちらかを動かす。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>縁の無い水面（景色）</td><td>水面が「果てなし」なのに、岸を「水面の縁ぜんぶ」にした。</td><td>水面の型を変えるか、岸を「線で引く」にする。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>客が水の上（景色）</td><td>客の帯の人が水の上にいる。</td><td>客を岸の上か、水の外へ動かす。</td></tr>
+      <tr><td><span class="dot stop"></span>止める</td><td>客が機材の上（景色）</td><td>客の帯の中（か、機材の間隔の半分より近く）に機材がある。</td><td>客か機材を動かす。</td></tr>
       <tr><td><span class="dot red"></span>赤</td><td>花火の保安距離</td><td>一番小さい玉（2.5号）でも客席に近すぎる。</td><td>花火の台を客席から離す。</td></tr>
       <tr><td><span class="dot red"></span>赤</td><td>水が客席に届く</td><td>首振りを客席側へ倒すと、水としぶきが客席に入る。</td><td>機材を下げるか、演出で客席側へ倒す角度を文の角度までにする。</td></tr>
       <tr><td><span class="dot red"></span>赤</td><td>花火が水幕にかかる</td><td>開く位置が水幕にかかる。</td><td>花火の台か水幕を動かす。</td></tr>
+      <tr><td><span class="dot red"></span>赤</td><td>客が保安距離の内側（景色）</td><td>客の帯が、花火の台の号の保安距離より筒に近い。</td><td>客を下げるか、玉を小さくする。</td></tr>
+      <tr><td><span class="dot red"></span>赤</td><td>水が客にかかる（景色）</td><td>客の帯が客席の線より機材に近く、そこに機材の水が届く（客席の線より後ろの客は、上の「水が客席に届く」が見る）。</td><td>客を機材から離す。</td></tr>
       <tr><td><span class="dot yel"></span>黄</td><td>近すぎ</td><td>違う種類どうしが近い。</td><td>実機の大きさで収まるか確かめる。</td></tr>
       <tr><td><span class="dot yel"></span>黄</td><td>水盤の外に落ちる</td><td>縁までが、水の高さや着水点より近い。</td><td>縁から離すか、水面を広げる。</td></tr>
       <tr><td><span class="dot yel"></span>黄</td><td>ポンプの合計</td><td>流量の合計が、規模の目安（机 0.3・庭 5・広場 150・湖 5,000 L/s）を超える。</td><td>台数を減らす。</td></tr>
       <tr><td><span class="dot yel"></span>黄</td><td>描画の重さ</td><td>飛沫の粒が 45万を超える（3D が重くなる）。</td><td>台数を減らす。</td></tr>
       <tr><td><span class="dot yel"></span>黄</td><td>客席が無い</td><td>花火と飛沫を確かめられない。</td><td>部品「客席」を足す。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>手すりの無い水際（景色）</td><td>水際の近く（湖 3 m・広場 2 m・庭 0.5 m・机 5 cm 以内）の客の前に手すりが無い。湖はいつも、ほかの規模は岸が水面から 0.3 m 以上のとき。</td><td>部品「手すり」を水際に引く。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>岸が無い（景色）</td><td>客や手すりの足元に岸が無い（3D では水面の高さに立って見える）。</td><td>部品「岸」を足す。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>手すりが水の上（景色）</td><td>手すりが水の上にある。</td><td>岸の上に動かす。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>カメラが地面の中（景色）</td><td>カメラが岸の地面より低い。</td><td>岸を低くするか、カメラを水の上に出す。</td></tr>
+      <tr><td><span class="dot yel"></span>黄</td><td>客が多すぎる（景色）</td><td>客が 12,000 人を超える（描くのはそこまで）。</td><td>奥行きか密度を減らす。</td></tr>
       <tr><td><span class="dot yel"></span>黄</td><td>プロジェクター</td><td>どの水幕にも当たっていない／当てる水幕の方を向いていない（向きから 60° より外）／水幕の客席側にある（前から映すと幕の後ろの物にも像が当たり、光が客席へ向く）。</td><td>「当てる水幕」を選ぶ、○で向きを直す、□で水幕の後ろへ動かす。</td></tr>
     </table>
     <ol class="steps">
@@ -775,7 +829,7 @@ npm run dev</pre>
       <tr><td>床の噴き上げ（広場・垂直 4 m）</td><td>床の下から噴く。</td><td>広場</td></tr>
       <tr><td>床の首振り（広場・首振り 6 m）</td><td>床の下から首を振る。</td><td>広場</td></tr>
     </table>
-    <p>画面の下には、水の機材（台）・水幕（枚）・花火の筒（本）・ポンプ（L/s）・飛沫の粒、と「動かないキュー」が出ます。「動かないキュー」を押すと、3つの版をこの会場で流したときの数（動かない・一部だけ・全部）が出ます。</p>
+    <p>画面の下には、水の機材（台）・水幕（枚）・花火の筒（本）・ポンプ（L/s）・飛沫の粒・客（人。景色の客があるとき）、と「動かないキュー」が出ます。「動かないキュー」を押すと、3つの版をこの会場で流したときの数（動かない・一部だけ・全部）が出ます。</p>
     <div class="figs small">
       <figure><img loading="lazy" src="img/42-venue-cues.jpg" alt="動かないキュー"><figcaption>ラグーンでの「動かないキュー」：3版とも 0</figcaption></figure>
     </div>
@@ -800,6 +854,17 @@ npm run dev</pre>
       <figure><img loading="lazy" src="img/51-gfx-off.jpg" alt="切"><figcaption>同じ所を <code>?gfx=off</code> で（前の見た目）</figcaption></figure>
       <figure><img loading="lazy" src="img/52-gfx-low.jpg" alt="低"><figcaption>同じ所を画質「低」で（自動で切れている）</figcaption></figure>
     </div>
+  </article>
+
+  <article class="cmp" id="graphics-scenery">
+    <h3>機材の本体と会場の景色</h3>
+    <ul class="plain">
+      <li><b>機材の本体</b>（ノズル・首振りの頭・ポンプなど）と<b>会場の景色</b>（岸・手すり・客）も、全部の版に入ります。景色は会場エディタで置いた分だけ描きます（4章）。</li>
+      <li>景色は夜なので暗く、照らすのは月・夜空・ショーの光（機材の LED の色と明るさ、水の柱の高さ）・水幕の映像（後ろから映す水幕は客席へ光を投げる）・花火。舗装には石の明暗をつけ、立体映像で奥行きの手がかりにしています。</li>
+      <li><b>席を塞がない</b>：カメラから舞台へ向かう線の上で、頭が舞台の下のほうより上に出る人と、カメラから 0.6 m 以内の人は、そのカメラでは描きません（決まった席・おまかせ・自由なカメラ・180° の両目のどれでも）。</li>
+      <li>本体も景色も水面には映りません（重さのため）。表示 ▾ で「隠す」にすると、入れる前の絵とまったく同じになります（2章）。</li>
+      <li>重さ（このMac、画質 高）：景色は広場・庭で +0.1 ms ほど、湖（3,082 人）で +0.0〜0.8 ms。</li>
+    </ul>
   </article>
 </section>
 
@@ -910,6 +975,17 @@ npm run dev</pre>
   <h2><span class="n">8</span>困ったとき</h2>
   <p class="intro">いま分かっている不具合と、よくある困りごと。詳しくは <a href="../reports/test-results.html">シナリオテストの結果</a> と <code>docs/test-scenarios.md</code> の §7・§8。</p>
 
+  <article class="cmp" id="trouble-bugs-1113">
+    <h3>直った不具合（2026-11-13）</h3>
+    <table class="t">
+      <tr><th>前の症状</th><th>いま</th></tr>
+      <tr><td>Vision Pro の書き出しの所要時間の見積もりが、実際の半分ほどだった（1コマ 1.2 秒で計算。全編で「約 130 分」）。</td><td>実測の 1コマ 2.5 秒（片目 7680 は 7.1 秒）で出す。全編 30 fps で約 4.5 時間（2章）。</td></tr>
+      <tr><td>Vision Pro の書き出しで、片目 7680 でも 60 fps を選べた（Vision Pro で再生できると分かっている量の倍）。</td><td>片目 7680 では 60 fps を選べず、注に「片目 7680 は 30 fps まで」と出る。</td></tr>
+      <tr><td>Vision Pro の 60 fps は、重い場面で Apple の上限（150 Mbps）を超えていた（品質 0.85 で約 200 Mbps）。</td><td>60 fps は品質 0.8 で書く（同じ場面で約 123 Mbps）。</td></tr>
+      <tr><td>開発サーバーで本番画面が開かず、コンソールに <code>504 (Outdated Optimize Dep)</code> が出続けることがあった（機材の本体を描く部品の依存が、初めの束ねに入っていなかった）。</td><td><code>vite.config.ts</code> で初めから束ねるようにした。まだ出たら、開発サーバーを起動し直す（下の「よくある困りごと」）。</td></tr>
+    </table>
+  </article>
+
   <article class="cmp" id="trouble-bugs-1112">
     <h3>直った不具合（2026-11-12）</h3>
     <table class="t">
@@ -945,7 +1021,9 @@ npm run dev</pre>
       <li>注意の黄と差し色の琥珀が近い（判断待ち）。</li>
       <li>自分の曲の「拍の目安」は、拍のはっきりした曲向けの目安です。テンポが揺れる曲では外れることがあるので、BPM とオフセットを手で直してください。</li>
       <li>机の噴水の実物（会場「机の試作（8台）」と <code>tools/desk-fountain</code>）は、まだ組んでいません。作り方は <code>docs/desk-build.md</code>。</li>
-      <li>Art-Net の実機・表示ソフトでの受信、Vision Pro 動画の実機での再生は、まだ確かめていません。</li>
+      <li>Art-Net の実機・表示ソフトでの受信、Vision Pro 動画の実機での再生（60 fps・近い席の立体感・空間の音・片目 7680 を含む）は、まだ確かめていません。</li>
+      <li>空間の音は、全編を通して書き出したことがまだありません（試しは 10 秒ほど）。全編では、音の元（約 0.7 GB）をいったんディスクに置いてから書きます。</li>
+      <li>景色：湖の奥（水幕の向こう）と左右の岸はまだ無く、水が地平線まで続きます。人は低い多面体なので、近い席の足元ではかくばって見えます。おまかせのカメラの「クレーン」は湖の客の中から上がるので、上がる間に前の人が消えたり現れたりします（席を塞がない決まりのため）。手すりの判定は、まっすぐの手すりだけを見ます。</li>
       <li>画面を持たない試験のブラウザでは、通しの途中で画質が自動で「中」「低」に下がることがあります（自動の画質のふつうの動き）。</li>
     </ul>
     <div class="figs small">
@@ -960,11 +1038,21 @@ npm run dev</pre>
     </ul>
   </article>
 
+  <article class="cmp" id="trouble-lab">
+    <h3>まだ実験中のこと（歩き回る）</h3>
+    <p>Vision Pro の中を歩いて見るための試作です。ふつうの使い方では出てきません。計画は <code>docs/walkaround-plan.md</code>（作者の手元だけの作業メモで、GitHub には入っていない。Safari の WebXR で今のショーを描き、歩くのは客席のまわりだけ。きれいに見たいときは 180° の書き出し）。</p>
+    <ul class="plain">
+      <li>画質「VR」：本番画面の URL に <code>?quality=vr</code> を付けたときだけ（表示 ▾ には出ない）。水面の映り込みが消え、細かい飛沫が減る軽い画質。高・中・低の絵は変えていません。</li>
+      <li>試し台 <a href="http://localhost:5199/tools/vr-look.html"><code>tools/vr-look.html</code></a>：両目の絵を左右に並べて描く（<code>?perf=1</code> で重さを測る）。このMac で両目ぶん 3〜4.6 ms まで軽くしました。</li>
+      <li>WebXR にはまだつないでいません。Vision Pro の実機では試していません。</li>
+    </ul>
+  </article>
+
   <article class="cmp" id="trouble-disk">
     <h3>ディスクがいっぱいのとき</h3>
     <ol class="steps">
       <li>空きを見る：ターミナルで <code>df -h .</code>。</li>
-      <li><code>exports/</code> の古い書き出し（<code>exports/control/</code>・<code>exports/visionpro/</code>）を消す。Vision Pro は1本で数 GB。</li>
+      <li><code>exports/</code> の古い書き出し（<code>exports/control/</code>・<code>exports/visionpro/</code>）を消す。Vision Pro は全編1本で 1.5〜3.7 GB（片目 7680 がいちばん大きい）。<code>exports/visionpro/spatial-check/</code> は空間の音を耳で確かめるための音（<code>node scripts/spatial-check.mjs</code> が作る）なので、聴き終わったら消してよい。</li>
       <li><code>shots/</code>（比べる写真・動画、約 2 GB）と <code>backups/</code> の古いものを、要らなければ消す。</li>
       <li><code>node scripts/control-check.mjs</code> は走らせるたびに約 94 MB の写しを足すので、走らせたあと <code>exports/control/</code> を見る。</li>
     </ol>
@@ -992,6 +1080,8 @@ npm run dev</pre>
       <tr><td>エディタの直しが本番画面に出ない</td><td>エディタの「本番で再生 ↗」で開く（<code>?show=edited</code>）。「自動保存できません」と出ていないか見る。</td></tr>
       <tr><td>会場の「3Dで見る」が押せない</td><td>「止める」の警告がある。右の警告から直す。</td></tr>
       <tr><td>Art-Net が送れない</td><td><code>npm run dev</code> で開いているか見る（build した形では使えない）。</td></tr>
+      <tr><td>本番画面が開かない（コンソールに <code>504 (Outdated Optimize Dep)</code>）</td><td>開発サーバーを起動し直す（ターミナルで <kbd>Ctrl</kbd>+<kbd>C</kbd> のあと <code>npm run dev</code>）。開いていたページも読み直す。</td></tr>
+      <tr><td>Vision Pro の書き出しで「近い席」が無い</td><td>形式を「Vision Pro（180° 立体）」にすると、席の一覧の先頭に出る（ふつうの動画では出ない）。</td></tr>
       <tr><td>エディタの検査が1回目に落ちる</td><td><code>editor-check</code> は冷えた開発サーバーで時々落ちる。もう一度走らせる。</td></tr>
     </table>
   </article>
@@ -1040,7 +1130,8 @@ npm run dev</pre>
     <h3>会場と書き出しの言葉</h3>
     <dl class="gl">
       <dt>会場・規模</dt><dd>噴水を置く場所。規模は机・庭・広場・湖の4段。</dd>
-      <dt>部品</dt><dd>会場を作る単位（列・帯・弧・円・1台・水幕・花火の台・客席）。</dd>
+      <dt>部品</dt><dd>会場を作る単位（列・帯・弧・円・1台・水幕・プロジェクター・花火の台・客席と、景色の岸・手すり・客）。</dd>
+      <dt>景色</dt><dd>会場の岸（護岸・歩道・地面）・手すり・客（人の群れ）。描くだけで、キューでは動かない。表示 ▾ で出す／隠す（<kbd>K</kbd>）。</dd>
       <dt>止める・赤・黄</dt><dd>会場の警告の3段。止める＝作れない、赤＝危ない、黄＝無理がある・見ておく。</dd>
       <dt>動かないキュー</dt><dd>その会場では狙う台が無くて動かないキュー。本番画面は飛ばして流す。</dd>
       <dt>自動保存</dt><dd>エディタ・会場の直しを、ブラウザが自動で覚えること。</dd>
@@ -1050,6 +1141,10 @@ npm run dev</pre>
       <dt>Art-Net</dt><dd>DMX の値を、ネットワークで送る方法。</dd>
       <dt>タイムコード</dt><dd>時:分:秒:コマ の時刻。機械どうしで時刻をそろえる。</dd>
       <dt>コマ（fps）</dt><dd>1秒を何コマに分けるか。このシミュレーターの記録は 40。</dd>
+      <dt>近い席</dt><dd>Vision Pro 180° の書き出しだけの席。会場の形から決めた、人がいられるいちばん近い場所（客席の縁より前に出ない・飛沫が掛からない・目は人の高さ）。</dd>
+      <dt>左右の目の差</dt><dd>同じ物が左目と右目の絵で何画素ずれるか。大きいほど立体に見える。近い物ほど大きい。</dd>
+      <dt>空間の音</dt><dd>Vision Pro の書き出しの音の1つ。音を会場の中の場所に置き、頭を回しても音が舞台に残る。</dd>
+      <dt>アンビソニックス</dt><dd>まわり全部の方向から来る音を、まとめて記録する形。空間の音は3次（16 チャンネル）で作り、Apple の APAC という形にして入れる。</dd>
     </dl>
     <div class="figs">
       <figure><img loading="lazy" src="img/25-cue.jpg" alt="時間軸"><figcaption>時間軸の四角（キュー）。「∿」が付いているのはマクロ、「follow」は音楽に合わせるマクロ</figcaption></figure>

@@ -10,13 +10,14 @@ import { ParamHistory } from './history';
 import { PROJECTOR_MAX } from './projector';
 import { JetField } from './jetfield';
 import { FixtureBodies } from './bodies';
+import { SceneryView } from './scenery';
 import { QUALITY_SCALE, buildLayout, zoneAt, zonesOfScreen, type Layout, type Quality, type ScreenUnit } from './layout';
 import type { ShowFile } from './types';
 import { getVenue, type Venue } from '../venues';
 import { GRAPHICS_DEFAULT, GRAPHICS_OFF, sameGraphics, type Graphics } from './graphics';
 
 /** Side of the ripple / foam map per quality tier (techniques/impact.ts). */
-const IMPACT_MAP: Record<Quality, number> = { high: 2048, medium: 1536, low: 1024, export: 4096 };
+const IMPACT_MAP: Record<Quality, number> = { high: 2048, medium: 1536, low: 1024, export: 4096, vr: 512 };
 
 /**
  * Projector brightness on the mist. Rear projection scatters forward, toward
@@ -50,6 +51,9 @@ export class ShowRuntime {
   /** The fixtures' bodies (bodies.ts); shown unless setFixtures(false). */
   bodies!: FixtureBodies;
   private bodiesOn = true;
+  /** The venue's banks, rails and audience (scenery.ts); shown unless setScenery(false). */
+  scenery!: SceneryView;
+  private sceneryOn = true;
   show!: CompiledShow;
   private screens: { unit: ScreenUnit; parts: MistTechnique[]; uniforms: ReturnType<typeof nozzleUniforms> }[] = [];
   file!: ShowFile;
@@ -107,6 +111,11 @@ export class ShowRuntime {
       this.stage.setUnreflected(this.bodies.object, false);
       this.bodies.dispose();
     }
+    if (this.scenery) {
+      this.stage.scene.remove(this.scenery.object);
+      this.stage.setUnreflected(this.scenery.unreflected, false);
+      this.scenery.dispose();
+    }
     this.layout = buildLayout(this.venue, quality);
     this.history = new ParamHistory(this.layout.channels);
     const g = this.drawnGraphics;
@@ -125,6 +134,10 @@ export class ShowRuntime {
     this.bodies.object.visible = this.bodiesOn;
     this.stage.scene.add(this.bodies.object);
     this.stage.setUnreflected(this.bodies.object, true);
+    this.scenery = new SceneryView(this.layout);
+    this.scenery.object.visible = this.sceneryOn;
+    this.stage.scene.add(this.scenery.object);
+    this.stage.setUnreflected(this.scenery.unreflected, true);
     if (this.screens.length === 0) this.buildScreens();
     if (this.file) this.setShow(this.file);
   }
@@ -188,6 +201,7 @@ export class ShowRuntime {
       this.stage.setSkyLights([], false);
       this.jets.haze.setPyro(this.pyroLight.set(0, 0, 0), false);
       this.bodies.setPyro(this.pyroLight);
+      this.scenery.setPyro(this.pyroLight);
     }
   }
 
@@ -199,6 +213,16 @@ export class ShowRuntime {
 
   get fixturesShown(): boolean {
     return this.bodiesOn;
+  }
+
+  /** Show or hide the venue's scenery (the player's 表示 → 景色, ?scenery=0). Hidden, nothing of it is drawn. */
+  setScenery(on: boolean) {
+    this.sceneryOn = on;
+    this.scenery.object.visible = on;
+  }
+
+  get sceneryShown(): boolean {
+    return this.sceneryOn;
   }
 
   /**
@@ -314,6 +338,7 @@ export class ShowRuntime {
     const avg = up ? this.screen.averageColor() : ([0, 0, 0] as [number, number, number]);
     const poolPos: THREE.Vector3[] = [];
     const poolW: number[] = [];
+    const screenLights: { pos: THREE.Vector3; col: THREE.Vector3; r: number }[] = [];
     this.screens.forEach(({ unit, parts, uniforms: u }, k) => {
       const level = levels[k];
       // the brightness of the picture on this screen: the projector's at its
@@ -333,6 +358,11 @@ export class ShowRuntime {
         // a screen the projector does not light catches no picture
         p.setProjection(unit.lit ? top * PROJECTOR_GAIN : 0);
       }
+      if (level > 0.01 && unit.lit && bright > 0) {
+        // the picture's light toward the audience (rear projection throws it forward)
+        const k = level * bright * top * PROJECTOR_GAIN;
+        screenLights.push({ pos: new THREE.Vector3(unit.center[0], u.uHeight.value * 0.5, unit.center[2] + 1), col: new THREE.Vector3(avg[0] * k, avg[1] * k, avg[2] * k), r: Math.max(unit.width, unit.height) * 0.5 });
+      }
       if (level > 0.01) {
         const n = Math.max(2, Math.round((12 * unit.width) / this.layout.screen.width));
         for (let j = 0; j < n; j++) {
@@ -342,6 +372,8 @@ export class ShowRuntime {
       }
     });
     s.setPools(poolPos, new THREE.Color(avg[0], avg[1], avg[2]), 2.5, poolW);
+    this.scenery.setScreenLights(screenLights);
+    this.scenery.update(t, this.history);
     this.advancePyro(t);
     s.setTime(t);
   }
@@ -360,7 +392,8 @@ export class ShowRuntime {
       L.addScaledVector(l.col, 4000 / (d2 + 4000));
     }
     this.jets.haze.setPyro(L.multiplyScalar(0.05));
-    // the same light on the fixtures' bodies (they stand lower and nearer the water)
+    // the same light on the fixtures' bodies (they stand lower and nearer the water) and the scenery
     this.bodies.setPyro(L);
+    this.scenery.setPyro(L);
   }
 }
